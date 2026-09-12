@@ -1,0 +1,16 @@
+{% extends "catalog/base.html" %}
+{% block title %}distrolinux{% endblock %}
+
+{% block content %}
+<h1>Seu computador, mas sem intermediário cobrando pedágio pelo que já é seu</h1>
+<p>Um sistema operacional é uma escolha, não um destino.</p>
+
+{% for cat in categories %}
+  <h2>{{ cat.label }}</h2>
+  <ul>
+    {% for distro in cat.distros %}
+      <li>{{ distro.name }} — {{ distro.short_description }}</li>
+    {% endfor %}
+  </ul>
+{% endfor %}
+{% endblock %}
