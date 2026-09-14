@@ -1,0 +1,25 @@
+{% extends "catalog/base.html" %}
+{% block title %}Resultado do quiz — distrolinux{% endblock %}
+
+{% block content %}
+<h1>Três opções compatíveis com suas respostas</h1>
+
+{% for r in results %}
+  <div class="result-card">
+    <h2>{{ r.distro.name }} — {{ r.percent }}% de compatibilidade</h2>
+    <p>{{ r.distro.short_description }}</p>
+    <p>Motivos da recomendação:</p>
+    <ul>
+      {% for reason in r.reasons %}
+        <li>{{ reason }}</li>
+      {% endfor %}
+    </ul>
+    <a href="{% url 'distro_detail' r.distro.slug %}">Ver detalhes</a>
+    <a href="{% url 'diagram' %}">Ver no diagrama</a>
+  </div>
+{% empty %}
+  <p>Não conseguimos calcular um resultado. Tente refazer o quiz.</p>
+{% endfor %}
+
+<a href="{% url 'quiz_start' %}">Refazer o quiz</a>
+{% endblock %}

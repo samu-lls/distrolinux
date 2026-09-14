@@ -1,0 +1,17 @@
+{% extends "catalog/base.html" %}
+{% block title %}Quiz — pergunta {{ number }} — distrolinux{% endblock %}
+
+{% block content %}
+<p class="progress">Pergunta {{ number }} de {{ total }}</p>
+
+<h1>{{ question.text }}</h1>
+
+<form method="post">
+  {% csrf_token %}
+  {% for option in question.options %}
+    <button type="submit" name="option" value="{{ forloop.counter0 }}" class="option-btn">
+      {{ option.text }}
+    </button>
+  {% endfor %}
+</form>
+{% endblock %}

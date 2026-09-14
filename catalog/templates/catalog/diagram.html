@@ -1,0 +1,13 @@
+{% extends "catalog/base.html" %}
+{% block title %}Diagrama — distrolinux{% endblock %}
+
+{% block content %}
+<h1>Como as distros se conectam</h1>
+<p>Cada distro-base ramifica nas edições derivadas dela.</p>
+
+<ul class="tree-root">
+  {% for node in tree %}
+    {% include "catalog/_tree_node.html" with node=node %}
+  {% endfor %}
+</ul>
+{% endblock %}

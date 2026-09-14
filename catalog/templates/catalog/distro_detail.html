@@ -1,0 +1,33 @@
+{% extends "catalog/base.html" %}
+{% block title %}{{ distro.name }} — distrolinux{% endblock %}
+
+{% block content %}
+<a href="{% url 'home' %}">&larr; Voltar</a>
+
+<h1>{{ distro.name }}</h1>
+{% if base %}
+  <p>Base: <a href="{% url 'distro_detail' base.slug %}">{{ base.name }}</a></p>
+{% endif %}
+
+<p>{{ distro.long_description }}</p>
+
+<dl>
+  <dt>Suporte a NVIDIA</dt>
+  <dd>{{ distro.nvidia_support }}</dd>
+  <dt>Ambiente padrão</dt>
+  <dd>{{ distro.default_de }}</dd>
+</dl>
+
+{% if editions %}
+  <h2>Distros derivadas desta</h2>
+  <ul>
+    {% for e in editions %}
+      <li><a href="{% url 'distro_detail' e.slug %}">{{ e.name }}</a></li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+<p><a href="{{ distro.official_url }}" target="_blank" rel="noopener">Site oficial</a></p>
+
+<a href="{% url 'diagram' %}">Ver no diagrama</a>
+{% endblock %}
