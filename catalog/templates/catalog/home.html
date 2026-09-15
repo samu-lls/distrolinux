@@ -2,15 +2,22 @@
 {% block title %}distrolinux{% endblock %}
 
 {% block content %}
-<h1>Seu computador, mas sem intermediário cobrando pedágio pelo que já é seu</h1>
-<p>Um sistema operacional é uma escolha, não um destino.</p>
+<section class="hero">
+  <h1>Seu computador, mas sem intermediário cobrando pedágio pelo que já é seu</h1>
+  <p>Um sistema operacional é uma escolha, não um destino.</p>
+</section>
 
 {% for cat in categories %}
-  <h2>{{ cat.label }}</h2>
-  <ul>
-    {% for distro in cat.distros %}
-      <li>{{ distro.name }} — {{ distro.short_description }}</li>
-    {% endfor %}
-  </ul>
+  <section class="category-block">
+    <h2>{{ cat.label }}</h2>
+    <div class="distro-grid">
+      {% for distro in cat.distros %}
+        <a class="card distro-card" href="{% url 'distro_detail' distro.slug %}">
+          <h3>{{ distro.name }}</h3>
+          <p>{{ distro.short_description }}</p>
+        </a>
+      {% endfor %}
+    </div>
+  </section>
 {% endfor %}
 {% endblock %}

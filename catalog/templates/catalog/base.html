@@ -1,16 +1,40 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}distrolinux{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'catalog/style.css' %}">
+  <script>
+    (function () {
+      var saved = localStorage.getItem("theme");
+      var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.setAttribute("data-theme", saved || (prefersDark ? "dark" : "light"));
+    })();
+  </script>
 </head>
 <body>
   <header>
-    <a href="{% url 'home' %}">distrolinux</a>
+    <div class="wrapper">
+      <a href="{% url 'home' %}" class="logo">distrolinux</a>
+      <nav>
+        <a href="{% url 'diagram' %}">Diagrama</a>
+        <a href="{% url 'quiz_start' %}">Quiz</a>
+        <button id="theme-toggle" aria-label="Alternar tema"></button>
+      </nav>
+    </div>
   </header>
-  <main>
+
+  <main class="wrapper">
     {% block content %}{% endblock %}
   </main>
+  <footer>
+    <div class="wrapper footer-content">
+      <a href="https://github.com/samu-lls/distrolinux">Código no GitHub</a>
+      <a href="https://www.paypal.com/donate/?business=78H7QSAAB487J&no_recurring=0&currency_code=BRL" target="_blank" rel="noopener" class="btn btn-secondary btn-small">Apoiar o projeto</a>
+    </div>
+  </footer>
+  <script src="{% static 'catalog/theme.js' %}"></script>
 </body>
 </html>
