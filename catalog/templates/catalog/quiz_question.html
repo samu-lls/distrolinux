@@ -2,11 +2,14 @@
 {% block title %}Quiz — pergunta {{ number }} — distrolinux{% endblock %}
 
 {% block content %}
+<div class="quiz-progress-wrap">
+  <div class="quiz-progress-bar" id="quiz-progress-bar" data-target="{{ progress_percent }}"></div>
+</div>
 <p class="progress">Pergunta {{ number }} de {{ total }}</p>
 
 <h1>{{ question.text }}</h1>
 
-<form method="post">
+<form method="post" class="quiz-form">
   {% csrf_token %}
   {% for option in question.options %}
     <button type="submit" name="option" value="{{ forloop.counter0 }}" class="option-btn">
@@ -14,4 +17,12 @@
     </button>
   {% endfor %}
 </form>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var bar = document.getElementById("quiz-progress-bar");
+    requestAnimationFrame(function () {
+      bar.style.width = bar.dataset.target + "%";
+    });
+  });
+</script>
 {% endblock %}

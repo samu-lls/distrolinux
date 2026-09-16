@@ -1,0 +1,39 @@
+{% extends "catalog/base.html" %}
+{% block title %}Por que abandonar o Windows? — distrolinux{% endblock %}
+
+{% block content %}
+<div style="margin-top: 32px;"> <!-- Adicionada margem superior aqui para afastar o Voltar do header -->
+    <a href="{% url 'home' %}">&larr; Voltar</a>
+
+    <h1 style="margin-top: 16px;">Ainda não tá convencido a trocar seu Windows?</h1>
+    <p>Vou te mostrar uma coisa... O mundo não é um grande arco-íris, e o seu sistema operacional atual é a prova disso.</p>
+
+    <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 32px;">
+
+        <div class="card">
+            <h2>1. 60 GB pra quê?</h2>
+            <p>Nós vivemos num mundo onde nos fizeram acreditar que um sistema operacional precisa ocupar <strong>60 Gigabytes</strong> do seu armazenamento. Pra quê? Pra rodar processos em segundo plano que você nem sabe o que são. Enquanto isso, distros Linux pesam uma fração disso e fazem exatamente as mesmas coisas (ou mais).</p>
+        </div>
+
+        <div class="card">
+            <h2>2. O computador é SEU (em teoria)</h2>
+            <p>Não sabe o que é Copilot? Não usa o Xbox Game Bar? Prefere raspar um garfo na retina a usar o Edge? No Windows, você não pode desinstalar isso porque a Microsoft diz que "corrompe arquivos críticos". No Linux, se você quiser desinstalar a interface gráfica inteira, você pode. O PC é seu, você escolhe.</p>
+        </div>
+
+        <div class="card">
+            <h2>3. A barra de pesquisa virou um outdoor</h2>
+            <p>Você já pagou pelo hardware (e possivelmente pela licença do sistema), e em troca ganha anúncios no menu Iniciar, Candy Crush pré-instalado e rastreamento de dados embutido. O Linux é um quadro em branco: zero bloatware, zero telemetria forçada, apenas um sistema esperando pela sua customização.</p>
+        </div>
+
+        <div class="card">
+            <h2>4. Obsolescência forçada</h2>
+            <p>O suporte ao Windows 10 vai acabar, e o Windows 11 exige requisitos como o TPM 2.0. Se o seu PC for um pouco mais antigo, a solução corporativa é clara: jogue fora e compre um novo. Com o Linux, você instala uma interface leve (como XFCE) e seu hardware ganha anos de sobrevida rodando liso.</p>
+        </div>
+
+    </div>
+
+    <div style="margin-top: 48px; margin-bottom: 32px; text-align: center;"> <!-- Aumentada a margem e adicionado margin-bottom -->
+        <a href="{% url 'quiz_start' %}" class="btn">Chega de sofrer. Fazer o Quiz &rarr;</a>
+    </div>
+</div>
+{% endblock %}

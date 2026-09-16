@@ -141,3 +141,7 @@ def quiz_result(request):
         })
 
     return render(request, "catalog/quiz_result.html", {"results": results})
+
+def motivos(request):
+    """Página descontraída sobre os problemas do Windows."""
+    return render(request, "catalog/motivos.html")

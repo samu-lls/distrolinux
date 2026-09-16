@@ -7,6 +7,7 @@ html[data-theme="light"] {
     --bg: #ffffff;
     --bg-secondary: #f7f6f4;
     --bg-card: #ffffff;
+    --bg-glass: rgba(255, 255, 255, 0.75);
     --text: #1f1f1f;
     --text-secondary: #6b6b6b;
     --border: #e5e3df;
@@ -20,6 +21,7 @@ html[data-theme="dark"] {
     --bg: #262624;
     --bg-secondary: #30302e;
     --bg-card: #2d2c2a;
+    --bg-glass: rgba(38, 38, 36, 0.75);
     --text: #f2f0eb;
     --text-secondary: #a8a29a;
     --border: #40403c;
@@ -77,11 +79,13 @@ main {
 
 /* ===== Header ===== */
 header {
-    border-bottom: 1px solid var(--border);
-    background: var(--bg);
+    background: var(--bg-glass);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(128, 128, 128, 0.15); /* Borda muito sutil */
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: 100; /* Aumentei o z-index para garantir que fique sempre por cima */
 }
 
 header .wrapper {
@@ -108,8 +112,29 @@ nav a {
     color: var(--text-secondary);
     font-weight: 500;
     font-size: 0.95rem;
+    position: relative;
+    padding-bottom: 4px;
+    transition: color 0.3s ease;
 }
-nav a:hover { color: var(--text); }
+
+nav a::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 1px;
+    bottom: 0;
+    left: 0;
+    background-color: var(--text);
+    transition: width 0.3s ease;
+}
+
+nav a:hover {
+    color: var(--text);
+}
+
+nav a:hover::after {
+    width: 100%;
+}
 
 #theme-toggle {
 border: 1px solid var(--border);
@@ -212,15 +237,60 @@ footer {
 
 /* ===== Home ===== */
 .hero {
-    padding: 32px 0 0;
+    padding: 48px 0 0;
+    position: relative;
+    /* Adicionamos overflow hidden para cortar qualquer margem gigante invisível da imagem */
+    overflow: hidden;
 }
+
 .hero p {
     font-size: 1.15rem;
 }
 
+/* Container que segura o mockup e o brilho traseiro */
+.hero-image-container {
+    margin-top: -90px;
+    margin-bottom: -100px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    position: relative;
+    z-index: 1; /* Garante que fique atrás das categorias */
+}
+
+/* Spotlight (Luz de palco) atrás do notebook no estilo Apple */
+.hero-image-container::before {
+    content: '';
+    position: absolute;
+    width: 80%;
+    max-width: 600px;
+    height: 70%;
+    background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+    filter: blur(40px);
+    opacity: 0.12; /* Ajustei sutilmente para aparecer no modo claro */
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: -1;
+    border-radius: 50%;
+}
+
+/* A imagem em si, com tamanho controlado */
+.hero-image {
+    max-width: 850px;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+    animation: float 6s ease-in-out infinite;
+}
+
+/* Bloco das categorias */
 .category-block {
+    position: relative; /* Necessário para o z-index funcionar */
+    z-index: 5; /* Coloca as categorias acima da área invisível da imagem */
     margin-top: 56px;
 }
+
 .category-block:last-of-type {
     margin-bottom: 64px;
 }
@@ -242,4 +312,113 @@ footer {
 .distro-card p {
     margin: 0;
     font-size: 0.9rem;
+}
+
+/* ===== Diagrama ===== */
+.tree-root, .tree-root ul {
+    list-style: none;
+    padding-left: 20px;
+}
+.tree-root { padding-left: 0; }
+
+.tree-node {
+    margin: 8px 0;
+    position: relative;
+}
+
+.tree-node > a {
+    display: inline-block;
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--bg-card);
+    color: var(--text) !important;
+    font-size: 0.9rem;
+}
+.tree-node > a:hover {
+    border-color: var(--accent);
+}
+
+/* ===== Quiz ===== */
+.quiz-progress-wrap {
+    height: 6px;
+    background: var(--bg-secondary);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+.quiz-progress-bar {
+    height: 100%;
+    background: var(--accent);
+    transition: width 0.4s ease;
+    width: 0;
+}
+
+.progress {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+}
+
+.quiz-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.option-btn {
+    text-align: left;
+    padding: 18px 20px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.option-btn:hover {
+    border-color: var(--accent);
+    background: var(--bg-secondary);
+}
+
+/* ===== Rodapé sempre no final (mesmo em páginas curtas) ===== */
+html, body { height: 100%; }
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+main { flex: 1 0 auto; }
+footer { flex-shrink: 0; }
+
+/* ===== Resultado do quiz ===== */
+.result-title {
+    margin-top: 8px;
+}
+.result-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin: 24px 0 40px;
+}
+.result-reasons-label {
+    margin: 12px 0 4px;
+    font-weight: 500;
+    color: var(--text);
+}
+.result-reasons li {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    padding: 2px 0;
+}
+.result-links {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+}
+.result-restart {
+    margin-bottom: 24px;
 }
