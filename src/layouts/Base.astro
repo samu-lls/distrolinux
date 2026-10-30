@@ -18,6 +18,20 @@ const { title, description = 'Tudo sobre Linux, sem enrolação.', fullscreen = 
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
+    <!-- prévia ao compartilhar o link (WhatsApp, Telegram, Discord, redes sociais): a imagem precisa de URL absoluta -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="DISTRO LINUX" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={new URL(Astro.url.pathname, Astro.site)} />
+    <meta property="og:image" content={new URL('/og.jpg', Astro.site)} />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="DISTRO LINUX: encontre o Linux certo pra você" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#1a1816" />
     <!-- ?v= força o navegador a buscar de novo quando o ícone muda -->
     <link rel="icon" href="/favicon.svg?v=3" type="image/svg+xml" />
     <title>{title}</title>
