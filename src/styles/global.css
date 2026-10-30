@@ -1,0 +1,201 @@
+@import '@fontsource-variable/inter';
+
+/* ---------- Tokens ---------- */
+:root {
+  --bg: #f4f1ea;
+  --bg-alt: #ebe6dc;
+  --surface: #fbf9f5;
+  --text: #22201c;
+  --text-2: #6f6a62;
+  --line: rgba(60, 40, 20, 0.1);
+  --accent: #0071e3;
+  --accent-2: #2997ff;
+  --win: #0a64d8;
+  --tux: #f5a623;
+  --glass-bg: rgba(251, 249, 245, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.7);
+  --glass-shine: rgba(255, 255, 255, 0.9);
+  --shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+  --radius: 28px;
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter Variable', 'Segoe UI', Roboto, sans-serif;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --bg: #1a1816;
+  --bg-alt: #24211e;
+  --surface: #2b2825;
+  --text: #f3efe9;
+  --text-2: #a8a29a;
+  --line: rgba(255, 240, 220, 0.1);
+  --accent: #2997ff;
+  --accent-2: #64b5ff;
+  --glass-bg: rgba(36, 33, 30, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-shine: rgba(255, 255, 255, 0.18);
+  --shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+
+/* ---------- Seções invertidas ----------
+   Alternam com o tema pra dar contraste, como a Apple:
+   no claro viram escuras, no escuro viram claras. */
+.invert {
+  --bg: #1a1816;
+  --bg-alt: #24211e;
+  --surface: #2b2825;
+  --text: #f3efe9;
+  --text-2: #a8a29a;
+  --line: rgba(255, 240, 220, 0.1);
+  --accent: #2997ff;
+  --accent-2: #64b5ff;
+  --glass-bg: rgba(36, 33, 30, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-shine: rgba(255, 255, 255, 0.18);
+  --shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+:root[data-theme='dark'] .invert {
+  --bg: #f4f1ea;
+  --bg-alt: #ebe6dc;
+  --surface: #fbf9f5;
+  --text: #22201c;
+  --text-2: #6f6a62;
+  --line: rgba(60, 40, 20, 0.1);
+  --accent: #0071e3;
+  --accent-2: #2997ff;
+  --glass-bg: rgba(251, 249, 245, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.8);
+  --glass-shine: rgba(255, 255, 255, 0.9);
+  --shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+  color-scheme: light;
+}
+.invert {
+  background: var(--bg);
+  color: var(--text);
+  transition: background-color 0.5s var(--ease), color 0.5s var(--ease);
+}
+
+/* ---------- Base ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 17px;
+  line-height: 1.47;
+  letter-spacing: -0.022em;
+  overflow-x: clip;
+  transition: background-color 0.5s var(--ease), color 0.5s var(--ease);
+}
+body.fullscreen { height: 100svh; overflow: hidden; overscroll-behavior: none; }
+img, video, svg { display: block; max-width: 100%; }
+/* garante que `hidden` sempre esconda, mesmo com display definido no componente */
+[hidden] { display: none !important; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+::selection { background: var(--accent); color: #fff; }
+
+.container { width: min(1100px, 100% - 44px); margin-inline: auto; }
+
+/* ---------- Typography ---------- */
+.eyebrow {
+  font-size: clamp(17px, 2vw, 21px);
+  font-weight: 600;
+  color: var(--text-2);
+  margin: 0 0 8px;
+}
+.headline {
+  font-size: clamp(44px, 8vw, 96px);
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  margin: 0;
+}
+.title {
+  font-size: clamp(36px, 5.5vw, 64px);
+  line-height: 1.08;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  margin: 0 0 16px;
+}
+.lead {
+  font-size: clamp(19px, 2.2vw, 24px);
+  line-height: 1.4;
+  color: var(--text-2);
+  font-weight: 500;
+  max-width: 680px;
+  margin: 16px auto 0;
+}
+.gradient-text {
+  background: linear-gradient(100deg, var(--accent) 0%, #a855f7 50%, var(--tux) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ---------- Liquid glass ---------- */
+.glass {
+  position: relative;
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    inset 0 1px 0 var(--glass-shine),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.04),
+    var(--shadow);
+}
+.glass::before {
+  /* reflexo especular que acompanha o mouse */
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    400px circle at var(--mx, 50%) var(--my, -20%),
+    var(--glass-shine),
+    transparent 40%
+  );
+  opacity: 0.5;
+  mix-blend-mode: soft-light;
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 24px;
+  border-radius: 980px;
+  font-size: 17px;
+  font-weight: 500;
+  border: 0;
+  cursor: pointer;
+  transition: transform 0.3s var(--ease), background 0.3s, box-shadow 0.3s;
+}
+.btn:hover { text-decoration: none; transform: scale(1.04); }
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { box-shadow: 0 8px 30px color-mix(in srgb, var(--accent) 50%, transparent); }
+.btn-link { background: none; color: var(--accent); padding-inline: 8px; }
+
+/* ---------- Sections ---------- */
+section { position: relative; }
+.section { padding-block: clamp(100px, 14vw, 180px); text-align: center; }
+.section-alt { background: var(--bg-alt); transition: background-color 0.5s var(--ease); }
+
+/* reveal inicial (o JS anima) */
+[data-reveal] { opacity: 0; transform: translateY(40px); }
+.no-js [data-reveal], .reduced [data-reveal] { opacity: 1; transform: none; }
+
+/* ---------- Theme transition ---------- */
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

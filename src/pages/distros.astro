@@ -1,0 +1,673 @@
+---
+import Base from '../layouts/Base.astro';
+import { guide, tags, distros, desktops, displayServers } from '../data/distros';
+import { wikiIdFor } from '../data/wiki';
+
+// todo nome de distro leva para a gota dela na Wiki
+const wikiHref = (name: string) => {
+  const id = wikiIdFor(name);
+  return id ? `/wiki#${id}` : undefined;
+};
+
+const maxRam = Math.max(...desktops.map((d) => d.ramMB));
+const levels = { 1: 'Fácil', 2: 'Intermediária', 3: 'Avançada' } as const;
+const yes = (v: string) => (v.startsWith('Sim') ? 'yes' : v.startsWith('Não') ? 'no' : 'mid');
+const score = { yes: 2, mid: 1, no: 0 };
+const tagRank = Object.fromEntries(tags.map((t, i) => [t.id, i]));
+const columns = [
+  { key: 'name', label: 'Distro' },
+  { key: 'base', label: 'Base' },
+  { key: 'de', label: 'Interface padrão' },
+  { key: 'cat', label: 'Categoria' },
+  { key: 'nv', label: 'NVIDIA' },
+  { key: 'docs', label: 'Doc. e comunidade' },
+];
+---
+
+<Base title="Escolha sua distro · distrolinux" description="Guia rápido para escolher sua distribuição Linux.">
+  <!-- ================= HERO ================= -->
+  <section class="d-hero">
+    <div class="aurora" aria-hidden="true"></div>
+    <div class="container">
+      <p class="eyebrow" data-reveal>Guia rápido · versão 2025.1</p>
+      <h1 class="headline" data-reveal>Escolha sua <span class="gradient-text">distro.</span></h1>
+      <p class="lead" data-reveal>
+        Baseado em centenas de respostas da comunidade, não em opinião pessoal.
+        Comece pelo seu perfil e termine com a tabela completa.
+      </p>
+      <p class="source" data-reveal>
+        Esta página foi feita com base em um post da comunidade r/linuxbrasil, que infelizmente foi apagado.
+      </p>
+      <nav class="jump" data-reveal aria-label="Seções do guia">
+        <a href="#perfil">Por perfil</a>
+        <a href="#tabela">Tabela de distros</a>
+        <a href="#interfaces">Interfaces</a>
+        <a href="#wayland">Wayland ou X11</a>
+      </nav>
+    </div>
+  </section>
+
+  <!-- ================= GUIA POR PERFIL ================= -->
+  <section id="perfil" class="section invert">
+    <div class="container">
+      <p class="eyebrow" data-reveal>Passo 1</p>
+      <h2 class="title" data-reveal>Qual é o seu perfil?</h2>
+
+      <div class="segmented glass" role="tablist" data-reveal>
+        <span class="seg-pill" aria-hidden="true"></span>
+        {guide.map((g, i) => (
+          <button role="tab" id={`tab-${g.id}`} aria-controls={`panel-${g.id}`} aria-selected={i === 0 ? 'true' : 'false'}>
+            <span aria-hidden="true">{g.icon}</span> {g.label}
+          </button>
+        ))}
+      </div>
+
+      {guide.map((g, i) => (
+        <div class="panel" role="tabpanel" id={`panel-${g.id}`} aria-labelledby={`tab-${g.id}`} hidden={i !== 0}>
+          {g.groups.map((group) => (
+            <article class="want glass">
+              <p class="want-label">Quero uma distro…</p>
+              <h3>{group.want}</h3>
+              <ul class="chips">
+                {group.distros.map((d) => <li>{wikiHref(d) ? <a href={wikiHref(d)}>{d}</a> : d}</li>)}
+              </ul>
+              {group.note && <p class="note">{group.note}</p>}
+            </article>
+          ))}
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- ================= TABELA DE DISTROS ================= -->
+  <section id="tabela" class="section">
+    <div class="container">
+      <p class="eyebrow" data-reveal>Passo 2</p>
+      <h2 class="title" data-reveal>Todas lado a lado.</h2>
+      <p class="lead" data-reveal>Filtre pelo que importa pra você ou procure pelo nome.</p>
+
+      <div class="toolbar" data-reveal>
+        <div class="filters" role="group" aria-label="Filtrar por categoria">
+          {tags.map((t, i) => (
+            <button class="filter" data-tag={t.id} aria-pressed={i === 0 ? 'true' : 'false'}>{t.label}</button>
+          ))}
+        </div>
+        <label class="search glass">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+          <input id="distro-search" type="search" placeholder="Buscar distro, base ou interface" autocomplete="off" />
+        </label>
+      </div>
+
+      <div class="table-wrap glass" data-reveal>
+        <table class="dtable">
+          <thead>
+            <tr>
+              {columns.map((c) => (
+                <th aria-sort="none">
+                  <button class="th-sort" data-key={c.key}>
+                    {c.label}
+                    <svg class="arrow" viewBox="0 0 10 10" width="10" height="10" aria-hidden="true"><path d="M5 2 8.5 7h-7z" fill="currentColor" /></svg>
+                  </button>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {distros.map((d, i) => (
+              <tr
+                data-tag={d.tag}
+                data-search={`${d.name} ${d.base} ${d.de} ${d.category}`.toLowerCase()}
+                data-order={i}
+                data-name={d.name}
+                data-base={d.base}
+                data-de={d.de}
+                data-cat={`${tagRank[d.tag]}|${d.category}`}
+                data-nv={score[yes(d.nvidia)]}
+                data-docs={score[yes(d.docs)]}
+              >
+                <td class="name">{wikiHref(d.name) ? <a href={wikiHref(d.name)}>{d.name}</a> : d.name}</td>
+                <td data-label="Base">{d.base}</td>
+                <td data-label="Interface">{d.de}</td>
+                <td data-label="Categoria"><span><span class={`badge t-${d.tag}`}>{tags.find((t) => t.id === d.tag)?.label}</span> {d.category}</span></td>
+                <td data-label="NVIDIA"><span><span class={`dot ${yes(d.nvidia)}`}></span>{d.nvidia}</span></td>
+                <td data-label="Documentação"><span><span class={`dot ${yes(d.docs)}`}></span>{d.docs}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p class="empty" id="empty" hidden>Nenhuma distro encontrada. Tenta outro termo.</p>
+      </div>
+      <p class="count" id="count" aria-live="polite">{distros.length} distros</p>
+    </div>
+  </section>
+
+  <!-- ================= INTERFACES ================= -->
+  <section id="interfaces" class="section invert">
+    <div class="container">
+      <p class="eyebrow" data-reveal>Passo 3</p>
+      <h2 class="title" data-reveal>A cara do seu sistema.</h2>
+      <p class="lead" data-reveal>
+        A interface gráfica (DE ou WM) é o que você vê e usa todo dia. Ela muda bastante o consumo de memória.
+      </p>
+
+      <div class="sort" role="group" aria-label="Ordenar interfaces" data-reveal>
+        <span class="sort-label">Ordenar por</span>
+        <button class="filter" data-sort="order" aria-pressed="true">Padrão</button>
+        <button class="filter" data-sort="easy" aria-pressed="false">Mais fácil de usar</button>
+        <button class="filter" data-sort="hard" aria-pressed="false">Mais avançada</button>
+        <button class="filter" data-sort="light" aria-pressed="false">Menos RAM</button>
+        <button class="filter" data-sort="heavy" aria-pressed="false">Mais RAM</button>
+        <button class="filter" data-sort="name" aria-pressed="false">A–Z</button>
+      </div>
+
+      <div class="de-grid" id="de-grid">
+        {desktops.map((d, i) => (
+          <article class="de glass" data-reveal data-order={i} data-ram={d.ramMB} data-diff={d.difficulty} data-name={d.name}>
+            <header>
+              <div class="de-title">
+                <h3>{d.name}</h3>
+                <span class={`level l${d.difficulty}`} title="Dificuldade de uso">
+                  <i></i><i></i><i></i>{levels[d.difficulty]}
+                </span>
+              </div>
+              <span class="de-style">{d.style}</span>
+            </header>
+            <div class="ram">
+              <div class="ram-bar"><span style={`--w:${(d.ramMB / maxRam) * 100}%; --bs:${(maxRam / d.ramMB) * 100}%`}></span></div>
+              <span class="ram-label">{d.ram}</span>
+            </div>
+            <dl>
+              <dt>Destaques</dt><dd>{d.features}</dd>
+              <dt>Ideal para</dt><dd>{d.for}</dd>
+              <dt>Onde encontrar</dt>
+              <dd class="where">
+                {d.distros.split(',').map((x, i) => (
+                  <>{i > 0 && ', '}{wikiHref(x) ? <a href={wikiHref(x)}>{x.trim()}</a> : x.trim()}</>
+                ))}
+              </dd>
+            </dl>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= WAYLAND x X11 ================= -->
+  <section id="wayland" class="section">
+    <div class="container">
+      <p class="eyebrow" data-reveal>Bônus</p>
+      <h2 class="title" data-reveal>Wayland ou X11?</h2>
+
+      <div class="tip glass" data-reveal>
+        <span class="tip-icon" aria-hidden="true">💡</span>
+        <p><strong>Dica simples e rápida:</strong> se estiver tudo funcionando bem no Wayland, fique com ele. Caso contrário, use o X11 sem medo.</p>
+      </div>
+
+      <div class="vs-table">
+        <div class="vs-head" data-reveal>
+          <span></span>
+          <span class="col-x11">X11</span>
+          <span class="col-wl">Wayland</span>
+        </div>
+        {displayServers.map((r) => (
+          <div class="vs-row" data-reveal>
+            <span class="crit">{r.criterion}</span>
+            <span>{r.x11}</span>
+            <span>{r.wayland}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  /* ---------- HERO (mais calmo que a página 1) ---------- */
+  .d-hero {
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+    padding-block: 180px 120px;
+  }
+  .d-hero .container { position: relative; z-index: 1; }
+  .aurora {
+    position: absolute;
+    inset: -40% -10% auto;
+    height: 120%;
+    background:
+      radial-gradient(40% 50% at 30% 40%, color-mix(in srgb, var(--accent) 35%, transparent), transparent 70%),
+      radial-gradient(35% 45% at 70% 35%, color-mix(in srgb, #a855f7 30%, transparent), transparent 70%),
+      radial-gradient(30% 40% at 50% 70%, color-mix(in srgb, var(--tux) 25%, transparent), transparent 70%);
+    filter: blur(40px);
+    animation: drift 20s ease-in-out infinite alternate;
+  }
+  @keyframes drift { to { transform: translate3d(3%, 4%, 0) rotate(4deg) scale(1.05); } }
+  .jump { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 40px; }
+  .jump a {
+    padding: 8px 16px;
+    border-radius: 980px;
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-size: 14px;
+    transition: background 0.3s, border-color 0.3s, transform 0.3s var(--ease);
+  }
+  .jump a:hover { text-decoration: none; background: var(--line); transform: translateY(-2px); }
+
+  /* ---------- SEGMENTED CONTROL ---------- */
+  .segmented {
+    position: relative;
+    display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 980px;
+    margin: 32px auto 48px;
+  }
+  .segmented button {
+    position: relative;
+    z-index: 1;
+    padding: 10px 20px;
+    border: 0;
+    background: none;
+    border-radius: 980px;
+    font: inherit;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-2);
+    cursor: pointer;
+    transition: color 0.3s;
+  }
+  .segmented button[aria-selected='true'] { color: var(--text); }
+  .seg-pill {
+    position: absolute;
+    top: 4px;
+    left: 0;
+    height: calc(100% - 8px);
+    border-radius: 980px;
+    background: var(--surface);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.5s var(--ease), width 0.5s var(--ease), height 0.5s var(--ease);
+  }
+
+  .panel {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    text-align: left;
+  }
+  .panel:not([hidden]) .want { animation: rise 0.6s var(--ease) both; }
+  .panel .want:nth-child(2) { animation-delay: 0.06s; }
+  .panel .want:nth-child(3) { animation-delay: 0.12s; }
+  .panel .want:nth-child(4) { animation-delay: 0.18s; }
+  .panel .want:nth-child(5) { animation-delay: 0.24s; }
+  .panel .want:nth-child(6) { animation-delay: 0.3s; }
+  @keyframes rise { from { opacity: 0; transform: translateY(16px) scale(0.98); } }
+
+  .want { border-radius: 22px; padding: 24px; display: flex; flex-direction: column; }
+  .want-label { margin: 0; font-size: 13px; color: var(--text-2); }
+  .want h3 { margin: 2px 0 16px; font-size: 22px; letter-spacing: -0.02em; line-height: 1.2; }
+  .chips { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .chips li a { color: inherit; }
+  .chips li a:hover { text-decoration: none; }
+  .chips li:has(a):hover { background: color-mix(in srgb, var(--accent) 20%, transparent); }
+  .chips li {
+    padding: 6px 12px;
+    border-radius: 980px;
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    color: var(--accent);
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.2s;
+  }
+  .note { margin: 16px 0 0; font-size: 13px; color: var(--text-2); }
+
+  /* ---------- TABELA ---------- */
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin: 48px 0 20px;
+  }
+  .filters, .sort { display: flex; flex-wrap: wrap; gap: 6px; }
+  .sort { justify-content: center; margin: 32px 0 40px; }
+  .filter {
+    padding: 7px 14px;
+    border-radius: 980px;
+    border: 1px solid var(--line);
+    background: none;
+    color: var(--text-2);
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s var(--ease);
+  }
+  .filter:hover { color: var(--text); }
+  .filter[aria-pressed='true'] { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+  .search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 980px;
+    color: var(--text-2);
+    min-width: min(300px, 100%);
+  }
+  .search input {
+    flex: 1;
+    border: 0;
+    background: none;
+    outline: none;
+    font: inherit;
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  .table-wrap { border-radius: 22px; overflow-x: auto; text-align: left; }
+  .dtable { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 860px; }
+  .dtable th { padding: 0; border-bottom: 1px solid var(--line); text-align: left; }
+  .th-sort {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 14px 16px;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-align: left;
+    color: var(--text-2);
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  .th-sort:hover, th:not([aria-sort='none']) .th-sort { color: var(--text); }
+  .arrow { flex: none; opacity: 0; transition: opacity 0.2s, transform 0.3s var(--ease); }
+  .th-sort:hover .arrow { opacity: 0.4; }
+  th[aria-sort='ascending'] .arrow { opacity: 1; }
+  th[aria-sort='descending'] .arrow { opacity: 1; transform: rotate(180deg); }
+  .dtable td { padding: 14px 16px; border-bottom: 1px solid var(--line); vertical-align: top; color: var(--text-2); }
+  .dtable tr:last-child td { border-bottom: 0; }
+  .dtable td.name { color: var(--text); font-weight: 600; white-space: nowrap; }
+  .dtable td.name a { color: inherit; }
+  .dtable td.name a:hover { color: var(--accent); text-decoration: none; }
+  .where a { color: var(--accent); }
+  .dtable tbody tr { transition: background 0.2s; }
+  .dtable tbody tr:hover { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+  .dtable tbody tr.show { animation: rowIn 0.45s var(--ease) both; }
+  @keyframes rowIn { from { opacity: 0; transform: translateY(6px); } }
+
+  .badge {
+    display: inline-block;
+    margin-right: 4px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .t-iniciante { background: #34c75922; color: #28a745; }
+  .t-intermediario { background: #2997ff22; color: var(--accent); }
+  .t-avancado { background: #a855f722; color: #a855f7; }
+  .t-jogos { background: #ff375f22; color: #ff375f; }
+  .t-fraco { background: #f5a62322; color: #d48806; }
+
+  .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 8px; vertical-align: middle; }
+  .dot.yes { background: #34c759; }
+  .dot.mid { background: #ff9f0a; }
+  .dot.no { background: #ff453a; }
+
+  .empty { padding: 32px; text-align: center; color: var(--text-2); margin: 0; }
+  .count { margin-top: 12px; font-size: 13px; color: var(--text-2); text-align: right; }
+
+  /* ---------- INTERFACES ---------- */
+  .de-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    text-align: left;
+  }
+  .de { border-radius: 22px; padding: 24px; display: flex; flex-direction: column; gap: 18px; }
+  .de header h3 { margin: 0; font-size: 24px; letter-spacing: -0.03em; }
+  .de-title { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .level {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-2);
+    white-space: nowrap;
+  }
+  .level i { width: 6px; height: 14px; border-radius: 3px; background: var(--line); }
+  .level i:last-of-type { margin-right: 5px; }
+  .l1 i:nth-child(-n + 1) { background: #34c759; }
+  .l2 i:nth-child(-n + 2) { background: #ff9f0a; }
+  .l3 i:nth-child(-n + 3) { background: #ff453a; }
+  .sort-label { align-self: center; margin-right: 6px; font-size: 14px; color: var(--text-2); }
+  .de-style { font-size: 14px; color: var(--text-2); }
+  .ram-bar { height: 6px; border-radius: 6px; background: var(--line); overflow: hidden; }
+  .ram-bar span {
+    display: block;
+    height: 100%;
+    width: var(--w);
+    border-radius: inherit;
+    /* degradê do tamanho da trilha inteira: barra curta fica verde, longa chega no vermelho */
+    background: linear-gradient(90deg, #34c759, #ff9f0a 60%, #ff453a) left / var(--bs) 100% no-repeat;
+    transform-origin: left;
+    transform: scaleX(0);
+    transition: transform 1.2s var(--ease) 0.2s;
+  }
+  .de.in .ram-bar span { transform: scaleX(1); }
+  .ram-label { display: block; margin-top: 8px; font-size: 13px; color: var(--text-2); }
+  dl { margin: 0; display: grid; gap: 4px; font-size: 14px; }
+  dt { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-2); margin-top: 8px; }
+  dd { margin: 0; }
+
+  /* ---------- WAYLAND ---------- */
+  .tip {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    max-width: 720px;
+    margin: 32px auto 48px;
+    padding: 20px 24px;
+    border-radius: 22px;
+    text-align: left;
+  }
+  .tip p { margin: 0; }
+  .tip-icon { font-size: 22px; }
+
+  .vs-table { max-width: 900px; margin-inline: auto; text-align: left; }
+  .vs-head, .vs-row {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr 1.5fr;
+    gap: 20px;
+    padding: 16px 4px;
+    border-bottom: 1px solid var(--line);
+  }
+  .vs-head { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+  .col-x11 { color: var(--text-2); }
+  .col-wl { color: var(--accent); }
+  .vs-row span { color: var(--text-2); font-size: 15px; }
+  .vs-row .crit { color: var(--text); font-weight: 600; }
+  .vs-row span:last-child { color: var(--text); }
+
+  .source {
+    display: inline-block;
+    margin: 24px auto 0;
+    padding: 6px 14px;
+    border-radius: 980px;
+    border: 1px solid var(--line);
+    font-size: 13px;
+    color: var(--text-2);
+  }
+
+  @media (max-width: 640px) {
+    /* seletor de perfil rola de lado em vez de empilhar */
+    .segmented { display: flex; flex-wrap: nowrap; justify-content: flex-start; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+    .segmented::-webkit-scrollbar { display: none; }
+    .segmented button { flex: none; padding: 9px 14px; font-size: 14px; white-space: nowrap; }
+
+    /* tabela vira uma lista de cards */
+    .table-wrap { overflow: visible; background: none; border: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+    .table-wrap::before { display: none; }
+    .dtable { min-width: 0; }
+    .dtable thead { display: none; }
+    .dtable, .dtable tbody, .dtable tr, .dtable td { display: block; }
+    .dtable tbody { display: grid; gap: 10px; }
+    .dtable tbody tr {
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+    }
+    .dtable tbody tr[hidden] { display: none; }
+    .dtable td { padding: 3px 0; border: 0; display: grid; grid-template-columns: 96px 1fr; gap: 8px; }
+    .dtable td::before { content: attr(data-label); font-size: 12px; color: var(--text-2); padding-top: 1px; }
+    .dtable td.name { display: block; font-size: 18px; padding-bottom: 8px; }
+    .dtable td.name::before { content: none; }
+    .count { text-align: center; }
+
+    .vs-head, .vs-row { grid-template-columns: 1fr 1fr; }
+    .vs-head span:first-child { display: none; }
+    .vs-row .crit { grid-column: 1 / -1; }
+    .toolbar { flex-direction: column; align-items: stretch; }
+  }
+</style>
+
+<script>
+  /* ---------- Segmented control ---------- */
+  const seg = document.querySelector<HTMLElement>('.segmented');
+  const pill = seg?.querySelector<HTMLElement>('.seg-pill');
+  const tabs = [...(seg?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? [])];
+
+  function movePill(tab: HTMLElement) {
+    if (!pill) return;
+    pill.style.width = `${tab.offsetWidth}px`;
+    pill.style.height = `${tab.offsetHeight}px`;
+    pill.style.transform = `translate(${tab.offsetLeft}px, ${tab.offsetTop - 4}px)`;
+  }
+
+  tabs.forEach((tab) =>
+    tab.addEventListener('click', () => {
+      tabs.forEach((t) => {
+        const on = t === tab;
+        t.setAttribute('aria-selected', String(on));
+        document.getElementById(t.getAttribute('aria-controls')!)!.hidden = !on;
+      });
+      movePill(tab);
+    }),
+  );
+  const syncPill = () => movePill(tabs.find((t) => t.getAttribute('aria-selected') === 'true') ?? tabs[0]);
+  syncPill();
+  addEventListener('resize', syncPill);
+  document.fonts?.ready.then(syncPill);
+
+  /* ---------- Filtro + busca da tabela ---------- */
+  const rows = [...document.querySelectorAll<HTMLTableRowElement>('.dtable tbody tr')];
+  const filters = [...document.querySelectorAll<HTMLButtonElement>('.filters .filter')];
+  const search = document.getElementById('distro-search') as HTMLInputElement | null;
+  const count = document.getElementById('count');
+  const empty = document.getElementById('empty');
+  let tag = 'todas';
+
+  function applyFilter() {
+    const q = (search?.value ?? '').trim().toLowerCase();
+    let shown = 0;
+    rows.forEach((r, i) => {
+      const ok = (tag === 'todas' || r.dataset.tag === tag) && (!q || r.dataset.search!.includes(q));
+      r.hidden = !ok;
+      r.classList.remove('show');
+      if (ok) {
+        void r.offsetWidth; // reinicia a animação
+        r.style.animationDelay = `${Math.min(shown, 12) * 0.03}s`;
+        r.classList.add('show');
+        shown++;
+      }
+    });
+    if (count) count.textContent = `${shown} ${shown === 1 ? 'distro' : 'distros'}`;
+    if (empty) empty.hidden = shown > 0;
+  }
+
+  filters.forEach((f) =>
+    f.addEventListener('click', () => {
+      tag = f.dataset.tag!;
+      filters.forEach((x) => x.setAttribute('aria-pressed', String(x === f)));
+      applyFilter();
+    }),
+  );
+  search?.addEventListener('input', applyFilter);
+
+  /* ---------- Ordenar tabela pelos cabeçalhos ---------- */
+  const tbody = document.querySelector<HTMLElement>('.dtable tbody');
+  const ths = [...document.querySelectorAll<HTMLTableCellElement>('.dtable th')];
+  // colunas de suporte começam pelo melhor (Sim antes de Não)
+  const numericDesc = new Set(['nv', 'docs']);
+
+  ths.forEach((th) =>
+    th.querySelector('button')!.addEventListener('click', (e) => {
+      const key = (e.currentTarget as HTMLElement).dataset.key!;
+      const cur = th.getAttribute('aria-sort');
+      // ciclo: crescente → decrescente → original
+      const next = cur === 'none' ? 'ascending' : cur === 'ascending' ? 'descending' : 'none';
+      ths.forEach((t) => t.setAttribute('aria-sort', 'none'));
+      th.setAttribute('aria-sort', next);
+
+      const dir = next === 'descending' ? -1 : 1;
+      const val = (r: HTMLElement) => r.dataset[key]!;
+      const cmp = (a: HTMLElement, b: HTMLElement) => {
+        if (next === 'none') return Number(a.dataset.order) - Number(b.dataset.order);
+        const r = numericDesc.has(key)
+          ? Number(val(b)) - Number(val(a))
+          : val(a).localeCompare(val(b), 'pt-BR', { numeric: true });
+        return dir * r || Number(a.dataset.order) - Number(b.dataset.order);
+      };
+      rows.sort(cmp).forEach((r) => tbody!.appendChild(r));
+      applyFilter();
+    }),
+  );
+
+  /* ---------- Barras de RAM animam ao aparecer ---------- */
+  const io = new IntersectionObserver(
+    (entries) => entries.forEach((e) => e.isIntersecting && (e.target.classList.add('in'), io.unobserve(e.target))),
+    { threshold: 0.3 },
+  );
+  document.querySelectorAll('.de').forEach((el) => io.observe(el));
+
+  /* ---------- Ordenar interfaces (com animação FLIP) ---------- */
+  const grid = document.getElementById('de-grid');
+  const sorts = [...document.querySelectorAll<HTMLButtonElement>('[data-sort]')];
+  sorts.forEach((s) =>
+    s.addEventListener('click', () => {
+      if (!grid) return;
+      sorts.forEach((x) => x.setAttribute('aria-pressed', String(x === s)));
+      const cards = [...grid.children] as HTMLElement[];
+      const before = new Map(cards.map((c) => [c, c.getBoundingClientRect()]));
+      const n = (c: HTMLElement, k: string) => Number(c.dataset[k]);
+      const compare: Record<string, (a: HTMLElement, b: HTMLElement) => number> = {
+        order: (a, b) => n(a, 'order') - n(b, 'order'),
+        easy: (a, b) => n(a, 'diff') - n(b, 'diff') || n(a, 'ram') - n(b, 'ram'),
+        hard: (a, b) => n(b, 'diff') - n(a, 'diff') || n(a, 'ram') - n(b, 'ram'),
+        light: (a, b) => n(a, 'ram') - n(b, 'ram'),
+        heavy: (a, b) => n(b, 'ram') - n(a, 'ram'),
+        name: (a, b) => a.dataset.name!.localeCompare(b.dataset.name!),
+      };
+      const cmp = compare[s.dataset.sort!];
+      cards.sort((a, b) => cmp(a, b) || n(a, 'order') - n(b, 'order')).forEach((c) => grid.appendChild(c));
+      cards.forEach((c) => {
+        const a = before.get(c)!;
+        const b = c.getBoundingClientRect();
+        c.animate(
+          [{ transform: `translate(${a.left - b.left}px, ${a.top - b.top}px)` }, { transform: 'none' }],
+          { duration: 600, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
+        );
+      });
+    }),
+  );
+</script>

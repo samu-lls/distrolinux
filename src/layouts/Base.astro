@@ -1,0 +1,47 @@
+---
+import '../styles/global.css';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  fullscreen?: boolean; // página ocupa a tela toda, sem rolagem nem rodapé
+}
+
+const { title, description = 'Tudo sobre Linux, sem enrolação.', fullscreen = false } = Astro.props;
+---
+
+<!doctype html>
+<html lang="pt-BR" class="no-js">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <!-- ?v= força o navegador a buscar de novo quando o ícone muda -->
+    <link rel="icon" href="/favicon.svg?v=3" type="image/svg+xml" />
+    <title>{title}</title>
+    <script is:inline>
+      // aplica o tema antes de pintar a página (evita flash)
+      (() => {
+        const root = document.documentElement;
+        root.classList.remove('no-js');
+        let theme;
+        try { theme = localStorage.getItem('theme'); } catch {}
+        if (!theme) theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        root.dataset.theme = theme;
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) root.classList.add('reduced');
+      })();
+    </script>
+  </head>
+  <body class:list={{ fullscreen }}>
+    <Nav />
+    <main>
+      <slot />
+    </main>
+    {!fullscreen && <Footer />}
+    <script>
+      import '../scripts/motion.ts';
+    </script>
+  </body>
+</html>

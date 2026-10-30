@@ -1,0 +1,53 @@
+---
+import { PENGUIN_PATH, PENGUIN_VIEWBOX } from '../data/brand';
+
+interface Props {
+  size?: number;
+  wordmark?: boolean;
+}
+const { size = 28, wordmark = true } = Astro.props;
+---
+
+<span class="logo" style={`--size:${size}px`}>
+  <!-- cabeça do pinguim; mancha do olho e reflexos vazados (evenodd), cor segue o tema -->
+  <svg class="icon" viewBox={PENGUIN_VIEWBOX} fill="currentColor" aria-hidden="true">
+    <path fill-rule="evenodd" d={PENGUIN_PATH} />
+  </svg>
+  {wordmark && (
+    <span class="word">
+      <span class="w1">DISTRO</span><span class="w2">LINUX</span>
+    </span>
+  )}
+</span>
+
+<style>
+  .logo { display: inline-flex; align-items: center; gap: 10px; }
+
+  .icon {
+    width: calc(var(--size) * 1.76); /* proporção do desenho (60 × 34) */
+    height: var(--size);
+    flex: none;
+    color: var(--text);
+    transform-origin: 60% 90%;
+    transition: transform 0.5s var(--ease), color 0.5s var(--ease);
+  }
+  /* inclina a cabeça, curioso */
+  .logo:hover .icon { transform: rotate(-12deg); }
+
+  .word {
+    display: inline-flex;
+    gap: 0.28em;
+    font-size: calc(var(--size) * 0.5);
+    letter-spacing: 0.14em;
+    line-height: 1;
+    color: var(--text);
+  }
+  .w1 { font-weight: 800; }
+  .w2 {
+    font-weight: 300;
+    background: linear-gradient(100deg, var(--accent), #a855f7 60%, var(--tux));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+</style>

@@ -1,5 +1,8 @@
-venv/
-__pycache__/
-*.pyc
-db.sqlite3
+node_modules/
+dist/
+.astro/
 .env
+.DS_Store
+
+# registro interno de desenvolvimento (não vai para o repositório)
+DEVLOG.md
