@@ -3,20 +3,21 @@
 
 import type { WikiNode } from '../data/wiki';
 
-const MAX = 64;
-const RADII = [110, 72, 54, 44];
+// tamanho da gota por profundidade: SISTEMA, Linux/interfaces/protocolos, GNU/Android…, famílias, derivadas…
+const RADII = [120, 96, 78, 62, 52, 46, 42];
 // distância mínima entre gotas, em múltiplos da soma dos raios (abaixo disso os campos se fundem)
 const GAP = 1.35;
 
 const VERT = `attribute vec2 a; void main() { gl_Position = vec4(a, 0.0, 1.0); }`;
 
-const FRAG = `
+// o shader é montado com o limite de gotas que a placa de vídeo aguenta (2 vec4 por gota)
+const frag = (MAX: number) => `
 precision highp float;
 uniform vec2 uRes;
 uniform vec3 uCam;      // x, y do centro no mundo, z = zoom
 uniform float uTime, uDpr, uDent, uDark;
 uniform vec4 uDrop[${MAX}];  // x, y, raio, escala
-uniform vec4 uWob[${MAX}];   // balanço, -, -, selecionada
+uniform vec4 uWob[${MAX}];   // balanço, apagada (0..1), -, selecionada
 uniform int uCount;
 uniform vec2 uMouse;
 uniform vec3 uBg, uLine, uMajor, uRim, uAccent;
@@ -39,7 +40,7 @@ void main() {
   vec2 frag = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y) / uDpr;
   vec2 p = uCam.xy + (frag - res * 0.5) / uCam.z;
 
-  float f = 0.0, fs = 0.0, kw = 0.0, rw = 0.0, sel = 0.0;
+  float f = 0.0, fs = 0.0, kw = 0.0, rw = 0.0, sel = 0.0, dim = 0.0;
   vec2 G = vec2(0.0);
   for (int i = 0; i < ${MAX}; i++) {
     if (i >= uCount) break;
@@ -48,12 +49,23 @@ void main() {
     float r = d.z * d.w;
     if (r < 0.5) continue;
     vec2 q = p - d.xy;
-    float fi = float(i);
-    float ang = atan(q.y, q.x);
-    // borda ondulando quando a gota é mexida
-    float rr = r * (1.0 + w.x * (0.06 * sin(3.0 * ang + uTime * 6.0 + fi) + 0.04 * sin(5.0 * ang - uTime * 8.0 + fi * 2.0)));
-    float R2 = rr * rr * 1.69;
     float d2 = dot(q, q);
+    // sombra (alcance maior que a gota)
+    vec2 qs = q - vec2(r * 0.12, r * 0.22);
+    float Rs2 = r * r * 3.6;
+    float ds2 = dot(qs, qs);
+    if (ds2 < Rs2) { float ts = 1.0 - ds2 / Rs2; fs += ts * ts * (1.0 - w.y * 0.85); }
+    // longe da gota (com folga para a ondulação): nada mais a calcular
+    float Rb = r * 1.3 * (1.0 + w.x * 0.1);
+    if (d2 >= Rb * Rb) continue;
+    float rr = r;
+    // borda ondulando quando a gota é mexida (ângulo e senos só aqui, perto da borda e com balanço)
+    if (w.x > 0.003) {
+      float fi = float(i);
+      float ang = atan(q.y, q.x);
+      rr = r * (1.0 + w.x * (0.06 * sin(3.0 * ang + uTime * 6.0 + fi) + 0.04 * sin(5.0 * ang - uTime * 8.0 + fi * 2.0)));
+    }
+    float R2 = rr * rr * 1.69;
     if (d2 < R2) {
       float t = 1.0 - d2 / R2;
       float k = t * t;
@@ -62,11 +74,8 @@ void main() {
       kw += k;
       rw += k * r;
       sel += k * w.w;
+      dim += k * w.y;
     }
-    vec2 qs = q - vec2(r * 0.12, r * 0.22);
-    float Rs2 = r * r * 3.6;
-    float ds2 = dot(qs, qs);
-    if (ds2 < Rs2) { float ts = 1.0 - ds2 / Rs2; fs += ts * ts; }
   }
 
   vec3 col = bg(p) * (1.0 - smoothstep(0.1, 0.6, fs) * mix(0.07, 0.3, uDark));
@@ -106,9 +115,13 @@ void main() {
     // cáustica: luz concentrada do lado oposto, dentro da gota
     float caus = smoothstep(0.1, 0.9, dot(normalize(n.xy + 1e-4), -L.xy)) * smoothstep(0.0, 0.35, h2) * (1.0 - h2) * length(n.xy) * 1.6;
     c += caus * mix(0.3, 0.16, uDark);
-    c = mix(c, uAccent, clamp(sel / max(kw, 1e-4), 0.0, 1.0) * fres * 0.7);
+    // destaque (selecionada ou da categoria filtrada): borda azul e um leve tom azul no corpo
+    float hl = clamp(sel / max(kw, 1e-4), 0.0, 1.0);
+    c = mix(c, uAccent, hl * (fres * 0.7 + 0.18));
 
     float inside = clamp((f - T) / max(length(G) / uCam.z * 1.2, 1e-4), 0.0, 1.0);
+    // gotas apagadas (descontinuadas ou fora do filtro) ficam quase transparentes
+    inside *= 1.0 - 0.88 * clamp(dim / max(kw, 1e-4), 0.0, 1.0);
     col = mix(col, c, inside);
   }
   gl_FragColor = vec4(col, 1.0);
@@ -124,8 +137,11 @@ interface Drop {
   px: number; py: number; tpx: number; tpy: number;
   expanded: boolean;
   dying: boolean;
+  dim: number; dimT: number; // apagada: 0 = normal, 1 = fora do filtro (descontinuadas ficam em 0,5)
+  shown: boolean;            // rótulo visível na tela (evita mexer no DOM à toa)
   label: HTMLElement;
-  link?: SVGLineElement; // linha até a gota mãe
+  link?: SVGLineElement;     // linha até a gota mãe
+  also: SVGLineElement[];    // ligações secundárias (tracejadas)
 }
 
 const THEMES = {
@@ -152,7 +168,9 @@ export function createEngine(opts: EngineOptions) {
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const kids = new Map<string, WikiNode[]>();
   nodes.forEach((n) => n.parent && kids.set(n.parent, [...(kids.get(n.parent) ?? []), n]));
-  const root = nodes.find((n) => n.kind === 'root')!;
+  // três gotas raiz: UNIX no centro, as outras ao lado (empilhadas na vertical em telas em pé)
+  const roots = nodes.filter((n) => n.kind === 'root');
+  const isRoot = (n: WikiNode) => n.kind === 'root';
 
   /* ---------- WebGL ---------- */
   const compile = (type: number, src: string) => {
@@ -164,7 +182,9 @@ export function createEngine(opts: EngineOptions) {
   };
   const prog = gl.createProgram()!;
   gl.attachShader(prog, compile(gl.VERTEX_SHADER, VERT));
-  gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FRAG));
+  // limite de gotas pelo número de uniforms do aparelho (celulares costumam ter 224; PCs, 1024+)
+  const MAX = Math.max(32, Math.min(160, Math.floor((gl.getParameter(gl.MAX_FRAGMENT_UNIFORM_VECTORS) - 16) / 2)));
+  gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, frag(MAX)));
   gl.linkProgram(prog);
   gl.useProgram(prog);
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
@@ -191,7 +211,7 @@ export function createEngine(opts: EngineOptions) {
     gl!.uniform1f(u.dark, t.dark);
   }
   applyTheme();
-  new MutationObserver(applyTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  new MutationObserver(() => { applyTheme(); dirty = true; }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
   /* ---------- Estado ---------- */
   const drops = new Map<string, Drop>();
@@ -202,6 +222,10 @@ export function createEngine(opts: EngineOptions) {
   let selected: Drop | null = null;
   let dent = 0;
   let W = 0, H = 0, dpr = 1;
+  let dirty = true;      // algo mudou fora da física (tema, tamanho, filtro): redesenhar
+  let scale = 1;         // resolução adaptativa: cai se os quadros ficarem lentos
+  let crowd = 1;         // com muitas gotas na tela (árvore aberta, zoom longe), desenha em resolução menor
+  let filter: string | null = null;
 
   // linhas de parentesco ficam atrás dos rótulos
   const SVGNS = 'http://www.w3.org/2000/svg';
@@ -210,13 +234,22 @@ export function createEngine(opts: EngineOptions) {
   labels.prepend(links);
 
   const radius = (depth: number) => RADII[Math.min(depth, RADII.length - 1)];
+  // no filtro, ficam acesas as gotas da categoria e o caminho até elas
+  const matches = (n: WikiNode) => (filter === 'old' ? !!n.discontinued : !!n.cats?.includes(filter as never));
+  const lit = new Set<string>();
+  function computeLit() {
+    lit.clear();
+    if (!filter) return;
+    for (const n of nodes) if (matches(n)) for (let p: WikiNode | undefined = n; p; p = p.parent ? byId.get(p.parent) : undefined) lit.add(p.id);
+  }
+  const dimOf = (n: WikiNode) => (filter ? (lit.has(n.id) ? (matches(n) ? 0 : 0.55) : 1) : n.discontinued ? 0.5 : 0);
   const depthOf = (n: WikiNode): number => (n.parent ? depthOf(byId.get(n.parent)!) + 1 : 0);
 
   function makeLabel(n: WikiNode, r: number) {
     const el = document.createElement('div');
     el.className = 'drop-label';
     el.style.width = `${r * 1.5}px`;
-    el.style.fontSize = `${r * (n.kind === 'root' ? 0.3 : 0.24)}px`;
+    el.style.fontSize = `${r * (isRoot(n) ? (n.name.length > 10 ? 0.22 : 0.3) : 0.24)}px`;
     const logo = opts.logos[n.id];
     if (logo?.path) {
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -238,8 +271,16 @@ export function createEngine(opts: EngineOptions) {
     const name = document.createElement('b');
     name.textContent = n.name;
     el.appendChild(name);
+    if (n.discontinued) el.classList.add('old');
     labels.appendChild(el);
     return el;
+  }
+
+  function kill(d: Drop) {
+    d.label.remove();
+    d.link?.remove();
+    d.also.forEach((l) => l.remove());
+    drops.delete(d.node.id);
   }
 
   function spawn(n: WikiNode, x: number, y: number, s = 0.15): Drop {
@@ -248,10 +289,18 @@ export function createEngine(opts: EngineOptions) {
     const d: Drop = {
       node: n, depth, r, x, y, vx: 0, vy: 0, tx: x, ty: y, s, ts: 1, wob: 0.6,
       px: 0, py: 0, tpx: 0, tpy: 0, expanded: false, dying: false, label: makeLabel(n, r),
+      dim: 0, dimT: dimOf(n), shown: true, also: [],
     };
+    d.dim = d.dimT;
     if (n.parent) {
       d.link = document.createElementNS(SVGNS, 'line');
       links.appendChild(d.link);
+    }
+    for (const _ of n.also ?? []) {
+      const l = document.createElementNS(SVGNS, 'line');
+      l.setAttribute('class', 'also');
+      links.appendChild(l);
+      d.also.push(l);
     }
     drops.set(n.id, d);
     return d;
@@ -267,8 +316,14 @@ export function createEngine(opts: EngineOptions) {
     const n = list.length;
     const rc = radius(d.depth + 1);
     let A: number, a0: number, step: number;
-    if (!parent) {
+    if (!parent && Math.hypot(d.tx, d.ty) < 1) {
       A = Math.PI * 2; step = A / n; a0 = -Math.PI / 2;
+    } else if (!parent) {
+      // raiz lateral: abre para o lado de fora, longe da UNIX
+      const dir = Math.atan2(d.ty, d.tx);
+      A = Math.min(Math.PI, Math.max(1.2, n * 0.42)); // no máx. meia-volta, sem invadir o lado da UNIX
+      step = n > 1 ? A / (n - 1) : 0;
+      a0 = dir - A / 2;
     } else {
       const dir = Math.atan2(d.ty - parent.ty, d.tx - parent.tx);
       A = Math.min(2.4, Math.max(0.9, n * 0.45)); // leque de no máx. ~140°, voltado para fora
@@ -278,7 +333,7 @@ export function createEngine(opts: EngineOptions) {
     const R = Math.max((d.r + rc) * GAP + 50, step > 0 ? (2 * rc * GAP + 16) / step : 0);
     const fresh = list.map((child, i) => {
       const existing = drops.get(child.id);
-      const c = existing && !existing.dying ? existing : (existing?.label.remove(), existing?.link?.remove(), spawn(child, d.tx, d.ty));
+      const c = existing && !existing.dying ? existing : (existing && kill(existing), spawn(child, d.tx, d.ty));
       c.dying = false;
       c.ts = 1;
       const a = a0 + step * i;
@@ -312,35 +367,48 @@ export function createEngine(opts: EngineOptions) {
     }
   }
 
-  // árvore completa: cada família ganha uma fatia do círculo proporcional ao número de folhas,
-  // e cada geração fica num anel mais externo (sem cruzamento de linhas)
-  // anéis e pesos calculados para que vizinhas fiquem a pelo menos GAP × (soma dos raios)
-  const RINGS = [0, 500, 1000, 1350];
-  const MIN_WEIGHT = [0, 4, 1.5, 1];
+  // árvore completa: cada família ganha uma fatia do círculo proporcional ao número de folhas, e cada geração
+  // fica num anel mais externo (sem cruzamento de linhas). O raio de cada anel cresce até caber a gota mais
+  // apertada daquela geração com a folga GAP entre vizinhas.
+  const RINGS = [0, 420, 900, 1450, 1980, 2460, 2900];
+  const MIN_WEIGHT = [0, 4, 2.5, 1.5, 1];
   function radialLayout() {
     const leaves = (id: string, depth = 0): number => {
       const k = kids.get(id);
       const sum = k?.length ? k.reduce((acc, c) => acc + leaves(c.id, depth + 1), 0) : 0;
       return Math.max(sum, MIN_WEIGHT[Math.min(depth, MIN_WEIGHT.length - 1)]);
     };
-    const place = (id: string, a0: number, a1: number, depth: number) => {
-      const d = drops.get(id);
-      if (!d) return;
-      const mid = (a0 + a1) / 2;
-      const R = RINGS[Math.min(depth, RINGS.length - 1)];
-      d.tx = d.node === root ? 0 : Math.cos(mid) * R;
-      d.ty = d.node === root ? 0 : Math.sin(mid) * R;
-      const list = kids.get(id) ?? [];
+    const slots: { id: string; depth: number; a0: number; a1: number }[] = [];
+    const split = (id: string, a0: number, a1: number, depth: number) => {
+      if (!drops.has(id)) return;
+      slots.push({ id, depth, a0, a1 });
+      const list = (kids.get(id) ?? []).filter((c) => drops.has(c.id));
       const total = list.reduce((sum, c) => sum + leaves(c.id, depth + 1), 0);
       let a = a0;
       list.forEach((c) => {
         const span = ((a1 - a0) * leaves(c.id, depth + 1)) / total;
-        place(c.id, a, a + span, depth + 1);
+        split(c.id, a, a + span, depth + 1);
         a += span;
       });
     };
-    place(root.id, -Math.PI / 2, Math.PI * 1.5, 0);
+    roots.forEach((r) => split(r.id, -Math.PI / 2, Math.PI * 1.5, 0));
+    // raio de cada anel: o fixo ou o necessário para a fatia mais estreita caber a gota, o que for maior
+    const R: number[] = [];
+    for (const sl of slots) {
+      const need = sl.depth ? (2 * radius(sl.depth) * GAP + 12) / Math.max(sl.a1 - sl.a0, 1e-3) : 0;
+      R[sl.depth] = Math.max(R[sl.depth] ?? 0, RINGS[Math.min(sl.depth, RINGS.length - 1)], need);
+    }
+    for (let d = 1; d < R.length; d++) R[d] = Math.max(R[d], R[d - 1] + radius(d - 1) + radius(d) * 2); // anéis em ordem
+    for (const sl of slots) {
+      const d = drops.get(sl.id)!;
+      const mid = (sl.a0 + sl.a1) / 2;
+      d.tx = sl.depth ? Math.cos(mid) * R[sl.depth] : 0;
+      d.ty = sl.depth ? Math.sin(mid) * R[sl.depth] : 0;
+    }
   }
+
+  // posição de repouso da raiz (SISTEMA, no centro)
+  const homeOf = (_i: number) => ({ x: 0, y: 0 });
 
   function collapse(d: Drop) {
     d.expanded = false;
@@ -359,6 +427,7 @@ export function createEngine(opts: EngineOptions) {
 
   function select(d: Drop | null) {
     selected = d;
+    dirty = true;
     onSelect(d ? d.node : null);
   }
 
@@ -382,14 +451,16 @@ export function createEngine(opts: EngineOptions) {
     const pw = opts.panelWidth();
     const ph = opts.panelHeight?.() ?? 0;
     // área livre: sem a navbar/busca no topo e sem os controles (ou o painel, no celular) embaixo
-    const top = ph ? 130 : 110, bottom = ph ? ph + 10 : 110;
+    // em tela em pé, o pinguim e o balão de dicas ocupam a parte de baixo
+    // em pé, a busca e a faixa de filtros ocupam o topo; o pinguim e o balão de dicas, a parte de baixo
+    const top = ph ? 130 : H > W ? 175 : 150, bottom = ph ? ph + 10 : H > W ? 250 : 190;
     const vw = W - pw, vh = H - top - bottom;
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     list.forEach((d) => {
       x0 = Math.min(x0, d.tx - d.r); y0 = Math.min(y0, d.ty - d.r);
       x1 = Math.max(x1, d.tx + d.r); y1 = Math.max(y1, d.ty + d.r);
     });
-    const z = zoomToFit ? Math.min(1.6, Math.max(0.18, Math.min(vw / (x1 - x0 + 60), vh / (y1 - y0 + 60)))) : Math.max(camT.z, 0.9);
+    const z = zoomToFit ? Math.min(1.6, Math.max(0.05, Math.min(vw / (x1 - x0 + 60), vh / (y1 - y0 + 60)))) : Math.max(camT.z, 0.9);
     camT.z = z;
     camT.x = (x0 + x1) / 2 + pw / 2 / z;
     camT.y = (y0 + y1) / 2 + ((bottom - top) / 2) / z; // centro da área livre
@@ -400,7 +471,7 @@ export function createEngine(opts: EngineOptions) {
 
   function zoomAt(sx: number, sy: number, factor: number) {
     const before = toWorld(sx, sy);
-    const z = Math.min(4, Math.max(0.15, cam.z * factor));
+    const z = Math.min(4, Math.max(0.05, cam.z * factor));
     cam.z = camT.z = z;
     cam.x = camT.x = before.x - (sx - W / 2) / z;
     cam.y = camT.y = before.y - (sy - H / 2) / z;
@@ -489,38 +560,50 @@ export function createEngine(opts: EngineOptions) {
 
   /* ---------- Loop ---------- */
   function resize() {
-    dpr = Math.min(devicePixelRatio || 1, 1.5);
+    dpr = Math.min(devicePixelRatio || 1, 1.5) * scale * crowd;
     W = canvas.clientWidth;
     H = canvas.clientHeight;
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     gl!.viewport(0, 0, canvas.width, canvas.height);
+    dirty = true;
   }
   new ResizeObserver(resize).observe(canvas);
   resize();
 
   let last = performance.now();
   const t0 = last;
+  const drawn = { x: NaN, y: NaN, z: NaN }; // câmera do último quadro desenhado
+  let slow = 0, fast = 0, ema = 1;
+
+  // ajusta um rótulo só quando o valor muda (escrever no DOM a cada quadro custa caro com 100+ gotas)
+  const setOpacity = (el: Element & { style: CSSStyleDeclaration }, v: string) => { if (el.style.opacity !== v) el.style.opacity = v; };
+
   function frame(now: number) {
-    const dt = Math.min((now - last) / 16.67, 3);
-    last = now;
+    // o Firefox pode entregar no 1º quadro um horário anterior ao do início: sem o piso em 0, o dt negativo
+    // explodia as molas (Math.pow com expoente negativo) e as gotas sumiam por alguns segundos
+    const dt = Math.max(0, Math.min((now - last) / 16.67, 3));
+    last = Math.max(last, now);
+    requestAnimationFrame(frame);
 
     const k = reduced ? 1 : 1 - Math.pow(0.88, dt);
     cam.x += (camT.x - cam.x) * k;
     cam.y += (camT.y - cam.y) * k;
     cam.z += (camT.z - cam.z) * k;
+    const dentT = hovered ? 0.32 : 0;
+    dent += (dentT - dent) * (1 - Math.pow(0.85, dt));
 
-    dent += ((hovered ? 0.32 : 0) - dent) * (1 - Math.pow(0.85, dt));
-
-    let i = 0;
+    // física das gotas; `active` = algo ainda se mexe (senão o quadro não precisa ser redesenhado)
+    let active = dirty || Math.abs(dentT - dent) > 0.002
+      || Math.abs(cam.x - drawn.x) * cam.z > 0.05 || Math.abs(cam.y - drawn.y) * cam.z > 0.05 || Math.abs(cam.z - drawn.z) > 1e-4;
     for (const [id, d] of drops) {
-      // mola até o alvo
       d.vx = (d.vx + (d.tx - d.x) * 0.05 * dt) * Math.pow(0.8, dt);
       d.vy = (d.vy + (d.ty - d.y) * 0.05 * dt) * Math.pow(0.8, dt);
       d.x += d.vx * dt;
       d.y += d.vy * dt;
       d.s += (d.ts - d.s) * (1 - Math.pow(0.9, dt));
       d.wob *= Math.pow(0.965, dt);
+      d.dim += (d.dimT - d.dim) * (1 - Math.pow(0.85, dt));
 
       // a gota é empurrada levemente para longe do dedo
       if (d === hovered) {
@@ -532,44 +615,76 @@ export function createEngine(opts: EngineOptions) {
       d.px += (d.tpx - d.px) * (1 - Math.pow(0.85, dt));
       d.py += (d.tpy - d.py) * (1 - Math.pow(0.85, dt));
 
-      if (d.dying && d.s < 0.04) {
-        d.label.remove();
-        d.link?.remove();
-        drops.delete(id);
+      if (d.dying && d.s < 0.04) { kill(d); active = true; continue; }
+      if (Math.abs(d.vx) + Math.abs(d.vy) > 0.01 || Math.abs(d.ts - d.s) > 0.002 || d.wob > 0.004
+        || Math.abs(d.tpx - d.px) + Math.abs(d.tpy - d.py) > 0.01 || Math.abs(d.dimT - d.dim) > 0.004) active = true;
+    }
+    if (!active) return; // tudo parado: nada a desenhar (economiza bateria e não esquenta o celular)
+    dirty = false;
+    drawn.x = cam.x; drawn.y = cam.y; drawn.z = cam.z;
+
+    // resolução adaptativa: quadros lentos seguidos baixam a resolução; folga longa sobe de volta
+    ema = ema * 0.9 + dt * 0.1;
+    if (ema > 1.5) { slow++; fast = 0; } else if (ema < 1.08) { fast++; slow = 0; }
+    if (slow > 40 && scale > 0.6) { scale = Math.max(0.6, scale - 0.15); slow = 0; resize(); }
+    if (fast > 240 && scale < 1) { scale = Math.min(1, scale + 0.1); fast = 0; resize(); }
+
+    const sx = (x: number) => (x - cam.x) * cam.z + W / 2;
+    const sy = (y: number) => (y - cam.y) * cam.z + H / 2;
+    let i = 0;
+    for (const d of drops.values()) {
+      const x = d.x + d.px, y = d.y + d.py;
+      const px = sx(x), py = sy(y);
+      const size = d.r * d.s * cam.z;
+      // fora da tela (com a sombra) ou pequena demais: nem vai para o shader nem mexe no rótulo
+      const off = px + size * 1.9 < 0 || px - size * 1.9 > W || py + size * 1.9 < 0 || py - size * 1.9 > H || size < 1;
+      if (off || i >= MAX) {
+        if (d.shown) { d.label.style.visibility = 'hidden'; d.shown = false; }
         continue;
       }
-      if (i >= MAX) continue;
-
-      const x = d.x + d.px, y = d.y + d.py;
       dropBuf.set([x, y, d.r, d.s], i * 4);
-      wobBuf.set([reduced ? d.wob * 0.3 : d.wob, 0, 0, d === selected ? 1 : 0], i * 4);
+      // anel de destaque: a gota selecionada e, com filtro, as gotas da categoria
+      const ring = d === selected ? 1 : filter && d.dimT === 0 ? 0.9 : 0;
+      wobBuf.set([reduced ? d.wob * 0.3 : d.wob, d.dim, 0, ring], i * 4);
       i++;
 
       // rótulo HTML acompanha a gota
-      const sx = (x - cam.x) * cam.z + W / 2;
-      const sy = (y - cam.y) * cam.z + H / 2;
-      const size = d.r * d.s * cam.z;
-      d.label.style.transform = `translate(${sx}px, ${sy}px) translate(-50%, -50%) scale(${cam.z * d.s})`;
-      d.label.style.opacity = size < 13 || d.dying ? '0' : String(Math.min(1, (size - 13) / 12));
+      if (!d.shown) { d.label.style.visibility = ''; d.shown = true; }
+      d.label.style.transform = `translate(${px}px, ${py}px) translate(-50%, -50%) scale(${cam.z * d.s})`;
+      const vis = size < 13 || d.dying ? 0 : Math.min(1, (size - 13) / 12) * (1 - d.dim * 0.75);
+      setOpacity(d.label, vis.toFixed(2));
     }
 
-    // linhas de borda a borda entre mãe e filha
-    for (const d of drops.values()) {
-      if (!d.link) continue;
-      const p = drops.get(d.node.parent!);
-      if (!p) { d.link.style.opacity = '0'; continue; }
-      const ax = (p.x + p.px - cam.x) * cam.z + W / 2, ay = (p.y + p.py - cam.y) * cam.z + H / 2;
-      const bx = (d.x + d.px - cam.x) * cam.z + W / 2, by = (d.y + d.py - cam.y) * cam.z + H / 2;
+    // linha de borda a borda entre duas gotas (some se estiverem perto demais)
+    const edge = (line: SVGLineElement, a: Drop, b: Drop, alpha: number) => {
+      const ax = sx(a.x + a.px), ay = sy(a.y + a.py), bx = sx(b.x + b.px), by = sy(b.y + b.py);
       const len = Math.hypot(bx - ax, by - ay) || 1;
-      const ra = p.r * p.s * cam.z + 6, rb = d.r * d.s * cam.z + 6;
-      if (len < ra + rb) { d.link.style.opacity = '0'; continue; }
+      const ra = a.r * a.s * cam.z + 6, rb = b.r * b.s * cam.z + 6;
+      if (len < ra + rb || !(a.shown || b.shown)) return setOpacity(line, '0');
       const ux = (bx - ax) / len, uy = (by - ay) / len;
-      d.link.setAttribute('x1', String(ax + ux * ra));
-      d.link.setAttribute('y1', String(ay + uy * ra));
-      d.link.setAttribute('x2', String(bx - ux * rb));
-      d.link.setAttribute('y2', String(by - uy * rb));
-      d.link.style.opacity = String(Math.max(0, Math.min(1, (len - ra - rb) / 40)) * d.s);
+      line.setAttribute('x1', (ax + ux * ra).toFixed(1));
+      line.setAttribute('y1', (ay + uy * ra).toFixed(1));
+      line.setAttribute('x2', (bx - ux * rb).toFixed(1));
+      line.setAttribute('y2', (by - uy * rb).toFixed(1));
+      setOpacity(line, (Math.max(0, Math.min(1, (len - ra - rb) / 40)) * alpha).toFixed(2));
+    };
+    for (const d of drops.values()) {
+      const fade = d.s * (1 - Math.max(d.dim, 0) * 0.7);
+      if (d.link) {
+        const p = drops.get(d.node.parent!);
+        if (p) edge(d.link, p, d, fade); else setOpacity(d.link, '0');
+      }
+      // ligações secundárias só aparecem com uma das duas gotas selecionada (com a árvore aberta, viravam ruído)
+      d.node.also?.forEach(([id], k) => {
+        const o = drops.get(id);
+        const on = o && !o.dying && !d.dying && (selected === d || selected === o);
+        if (on) edge(d.also[k], d, o!, Math.min(1, o!.s)); else setOpacity(d.also[k], '0');
+      });
     }
+
+    // o custo do shader é pixels × gotas: com muitas gotas visíveis (e pequenas), menos pixels
+    const want = i > 50 ? Math.max(0.6, 1 - (i - 50) / 150) : 1;
+    if (Math.abs(want - crowd) > 0.08) { crowd = want; resize(); }
 
     gl!.uniform2f(u.res, canvas.width, canvas.height);
     gl!.uniform3f(u.cam, cam.x, cam.y, cam.z);
@@ -581,10 +696,14 @@ export function createEngine(opts: EngineOptions) {
     gl!.uniform4fv(u.drop, dropBuf);
     gl!.uniform4fv(u.wob, wobBuf);
     gl!.drawArrays(gl!.TRIANGLES, 0, 3);
-    requestAnimationFrame(frame);
   }
 
-  spawn(root, 0, 0, 0.2);
+  roots.forEach((r, i) => {
+    const h = homeOf(i);
+    expand(spawn(r, h.x, h.y, 0.2));
+  });
+  fitTo([...drops.values()]);
+  Object.assign(cam, camT);
   requestAnimationFrame(frame);
 
   /* ---------- API pública ---------- */
@@ -603,7 +722,7 @@ export function createEngine(opts: EngineOptions) {
       } else fitTo([d], false);
     },
     expandAll() {
-      const queue = [root.id];
+      const queue = roots.map((r) => r.id);
       while (queue.length) {
         const id = queue.shift()!;
         const d = drops.get(id);
@@ -614,14 +733,29 @@ export function createEngine(opts: EngineOptions) {
       fitTo([...drops.values()].filter((d) => !d.dying));
     },
     collapseAll() {
-      const r = drops.get(root.id)!;
-      collapse(r);
+      // volta ao começo: SISTEMA aberto nas três partes
+      roots.forEach((r, i) => {
+        const d = drops.get(r.id)!;
+        collapse(d);
+        Object.assign(d, { tx: homeOf(i).x, ty: homeOf(i).y });
+        expand(d);
+      });
       select(null);
-      fitTo([r]);
-      camT.z = 1;
+      fitTo([...drops.values()].filter((d) => !d.dying));
+    },
+    // filtro por categoria (null = todas; 'old' = descontinuadas): abre tudo e apaga o que não combina
+    setFilter(cat: string | null) {
+      filter = cat;
+      computeLit();
+      if (cat) this.expandAll();
+      for (const d of drops.values()) d.dimT = dimOf(d.node);
+      // a câmera enquadra só as gotas da categoria
+      const hit = [...drops.values()].filter((d) => !d.dying && cat && matches(d.node));
+      if (hit.length) fitTo(hit);
+      dirty = true;
     },
     zoom(factor: number) {
-      camT.z = Math.min(4, Math.max(0.15, camT.z * factor));
+      camT.z = Math.min(4, Math.max(0.05, camT.z * factor));
     },
     center() {
       fitTo([...drops.values()].filter((d) => !d.dying));

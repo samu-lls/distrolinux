@@ -1,11 +1,19 @@
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
+import { type Lang, tr } from '../i18n';
+import { feedActive, initFeed } from './feed';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const root = document.documentElement;
 const reduced = root.classList.contains('reduced');
+// feed do celular: quem rola é o <main> (ver feed.ts), então os gatilhos de rolagem olham para ele
+const feedMain = feedActive() ? document.querySelector<HTMLElement>('main') : null;
+if (feedMain) {
+  initFeed(feedMain);
+  ScrollTrigger.defaults({ scroller: feedMain });
+}
 
 /* ---------- Tema claro/escuro (círculo que se espalha a partir do botão) ---------- */
 const toggle = document.getElementById('theme-toggle');
@@ -37,13 +45,15 @@ document.addEventListener('pointermove', (e) => {
 });
 
 /* ---------- Terminal do Linux ---------- */
+const lang: Lang = root.lang.startsWith('en') ? 'en' : 'pt';
+const t = (s: string) => tr(lang, s);
 const termLines = [
   '<span class="prompt">~ $</span> sudo pacman -Syu',
-  '<span class="dim">:: Sincronizando bancos de dados…</span>',
-  '<span class="dim">:: Iniciando atualização completa…</span>',
-  'resolvendo dependências… <span class="ok">ok</span>',
-  '(42/42) atualizando pacotes  <span class="ok">[################] 100%</span>',
-  '<span class="ok">✓ Pronto.</span> Sem reiniciar. Sem pedir licença.',
+  `<span class="dim">:: ${t('Sincronizando bancos de dados…')}</span>`,
+  `<span class="dim">:: ${t('Iniciando atualização completa…')}</span>`,
+  `${t('resolvendo dependências…')} <span class="ok">ok</span>`,
+  `(42/42) ${t('atualizando pacotes')}  <span class="ok">[################] 100%</span>`,
+  `<span class="ok">✓ ${t('Pronto.')}</span> ${t('Sem reiniciar. Sem pedir licença.')}`,
   '<span class="prompt">~ $</span> ',
 ];
 const term = document.getElementById('term');
@@ -62,15 +72,20 @@ if (document.body.classList.contains('fullscreen')) {
   renderUpdates(1);
   document.querySelectorAll<HTMLElement>('[data-count]').forEach((el) => (el.textContent = el.dataset.count!));
 } else {
-  /* ---------- Rolagem suave ---------- */
-  const lenis = new Lenis({ duration: 1.2 });
-  lenis.on('scroll', ScrollTrigger.update);
-  gsap.ticker.add((t) => lenis.raf(t * 1000));
-  gsap.ticker.lagSmoothing(0);
+  /* ---------- Rolagem suave (no feed, a rolagem nativa com encaixe já faz o trabalho) ---------- */
+  const lenis = feedMain ? null : new Lenis({ duration: 1.2 });
+  if (lenis) {
+    lenis.on('scroll', ScrollTrigger.update);
+    gsap.ticker.add((t) => lenis.raf(t * 1000));
+    gsap.ticker.lagSmoothing(0);
+  }
   document.querySelectorAll<HTMLAnchorElement>('a[href^="#"]').forEach((a) =>
     a.addEventListener('click', (e) => {
       const target = a.getAttribute('href')!;
-      if (target.length > 1) { e.preventDefault(); lenis.scrollTo(target, { offset: -40 }); }
+      if (target.length < 2) return;
+      e.preventDefault();
+      if (lenis) lenis.scrollTo(target, { offset: -40 });
+      else document.querySelector(target)?.scrollIntoView({ behavior: 'smooth' });
     }),
   );
 
@@ -86,8 +101,8 @@ if (document.body.classList.contains('fullscreen')) {
     delay: 0.1,
   });
 
-  /* ---------- Reveal genérico ---------- */
-  gsap.utils.toArray<HTMLElement>('[data-reveal]').forEach((el) => {
+  /* ---------- Reveal genérico (no feed, o CSS anima quando a tela fica ativa) ---------- */
+  gsap.utils.toArray<HTMLElement>('[data-reveal]').filter((el) => !(feedMain && el.closest('[data-screen]'))).forEach((el) => {
     gsap.to(el, {
       opacity: 1,
       y: 0,
@@ -97,14 +112,14 @@ if (document.body.classList.contains('fullscreen')) {
     });
   });
 
-  /* ---------- Parallax do líquido no hero (página 1) ---------- */
-  if (document.querySelector('.hero')) gsap.to('.hero .liquid', {
+  /* ---------- Parallax do líquido no hero (página 1; no feed a troca de telas já faz esse papel) ---------- */
+  if (document.querySelector('.hero') && !feedMain) gsap.to('.hero .liquid', {
     yPercent: 25,
     scale: 1.2,
     ease: 'none',
     scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true },
   });
-  if (document.querySelector('.hero-cards')) gsap.to('.hero-cards', {
+  if (document.querySelector('.hero-cards') && !feedMain) gsap.to('.hero-cards', {
     y: -80,
     ease: 'none',
     scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true },
@@ -142,6 +157,19 @@ if (document.body.classList.contains('fullscreen')) {
         gsap.to(obj, { v: end, duration: 2, ease: 'power3.out', onUpdate: () => (el.textContent = String(Math.round(obj.v))) }),
     });
   });
+
+  /* ---------- Ilustrações flutuantes: seguem o mouse de leve (profundidade em data-float) ---------- */
+  const floats = [...document.querySelectorAll<HTMLElement>('[data-float]')];
+  if (floats.length && matchMedia('(pointer: fine)').matches) {
+    addEventListener('pointermove', (e) => {
+      const x = e.clientX / innerWidth - 0.5, y = e.clientY / innerHeight - 0.5;
+      for (const el of floats) {
+        const depth = Number(el.dataset.float) || 20;
+        el.style.setProperty('--px', String((x * depth).toFixed(1)));
+        el.style.setProperty('--py', String((y * depth).toFixed(1)));
+      }
+    }, { passive: true });
+  }
 
   /* ---------- Tilt 3D nos cards ---------- */
   document.querySelectorAll<HTMLElement>('[data-tilt]').forEach((el) => {

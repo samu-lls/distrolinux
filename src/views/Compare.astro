@@ -1,0 +1,442 @@
+---
+import Base from '../layouts/Base.astro';
+import NextStep from '../components/NextStep.astro';
+import { logos } from '../data/logos';
+import { compareTable, DEFAULTS, MAX_COMPARE, CMP_TYPES } from '../data/compare';
+import { tableHTML } from '../scripts/compare-render';
+import { type Lang, tr, localePath } from '../i18n';
+
+const { lang } = Astro.props as { lang: Lang };
+const t = (s: string) => tr(lang, s);
+
+const labels = { wiki: t('Ver na Wiki'), best: t('Melhor valor entre as escolhidas'), other: t('Não é deste tipo: as linhas podem ficar com "-"') };
+const wikiPath = localePath(lang, '/wiki');
+const DEFAULT_COMPARE = DEFAULTS.desktop;
+const initial = tableHTML(compareTable(DEFAULT_COMPARE, lang, 'desktop'), logos, labels, wikiPath);
+---
+
+<Base title={`${t('Comparador de distros')} · distrolinux`} description={t('Compare distros Linux lado a lado: sistema, interface, facilidade, hardware, jogos e privacidade.')} lang={lang}>
+  <section class="cmp">
+    <div class="aurora" aria-hidden="true"></div>
+    <div class="container cmp-inner">
+      <p class="eyebrow">{t('Ferramenta')}</p>
+      <h1 class="headline">{t('Comparador de')} <span class="gradient-text">{t('distros.')}</span></h1>
+      <p class="lead">{t('Escolha até {n} distros e compare tudo lado a lado, seção por seção.').replace('{n}', String(MAX_COMPARE))}</p>
+
+      <div class="cmp-types" role="tablist" aria-label={t('O que você quer comparar')}>
+        <span class="cmp-pill" aria-hidden="true"></span>
+        {CMP_TYPES.map((x, i) => (
+          <button role="tab" data-type={x.id} aria-selected={i === 0 ? 'true' : 'false'}>{t(x.label)}</button>
+        ))}
+      </div>
+
+      <div class="cmp-pick" id="cmp-pick">
+        {Array.from({ length: MAX_COMPARE }, (_, i) => (
+          <div class="slot glass" data-slot={i}>
+            <span class="slot-logo" aria-hidden="true"></span>
+            <!-- lista própria (no lugar do <select>): busca, logos e só as distros da aba escolhida -->
+            <button class="slot-pick" data-index={i} aria-haspopup="listbox" aria-expanded="false" aria-label={`${t('Distro')} ${i + 1}`}>
+              <span class="slot-name">{t('+ Adicionar distro')}</span>
+              <svg class="chev" viewBox="0 0 10 10" width="10" height="10" aria-hidden="true"><path d="M1 3l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" /></svg>
+            </button>
+            <div class="slot-menu" hidden>
+              <input type="search" placeholder={t('Procurar distro')} aria-label={t('Procurar distro')} autocomplete="off" />
+              <ul role="listbox"></ul>
+            </div>
+            <button class="slot-remove" data-remove={i} aria-label={t('Remover')} hidden={!DEFAULT_COMPARE[i]}>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div class="cmp-tools">
+        <label class="switch">
+          <input type="checkbox" id="only-diff" />
+          <span class="track" aria-hidden="true"><span></span></span>
+          {t('Mostrar só as diferenças')}
+        </label>
+        <button class="btn btn-link" id="share" data-copied={t('Link copiado!')}>{t('Copiar link da comparação')}</button>
+      </div>
+
+      <p class="cmp-empty" id="cmp-empty" hidden>{t('Escolha pelo menos duas distros para comparar.')}</p>
+      <div class="cmp-wrap" id="cmp-table" set:html={initial} />
+      <p class="cmp-note">{t('"-" significa que a informação não se aplica ou não está na nossa Wiki. O destaque verde marca o melhor valor entre as distros escolhidas.')}</p>
+    </div>
+  </section>
+
+  <script type="application/json" id="cmp-data" set:html={JSON.stringify({ logos, labels, wikiPath })} />
+  <NextStep lang={lang} page="/comparar" />
+</Base>
+
+<style is:global>
+  /* global com prefixo .cmp: a tabela é redesenhada via JS e não recebe o escopo do Astro */
+  .cmp { position: relative; overflow: clip; padding-block: 120px 100px; }
+  .cmp .aurora {
+    position: absolute;
+    inset: -20% -10% auto;
+    height: 700px;
+    background:
+      radial-gradient(35% 45% at 25% 35%, color-mix(in srgb, var(--accent) 28%, transparent), transparent 70%),
+      radial-gradient(30% 40% at 75% 30%, color-mix(in srgb, #a855f7 25%, transparent), transparent 70%);
+    filter: blur(40px);
+    pointer-events: none;
+  }
+  .cmp-inner { position: relative; z-index: 1; text-align: center; width: min(1200px, 100% - 44px); }
+  .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  /* ---------- seletores ---------- */
+  .cmp-pick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 40px 0 18px; }
+  .cmp .slot { position: relative; display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 18px; text-align: left; min-width: 0; }
+  .cmp .slot-logo { width: 34px; height: 34px; flex: none; display: grid; place-items: center; border-radius: 10px; background: var(--surface); }
+  .cmp .slot-logo:empty { background: var(--line); }
+  .cmp .slot-logo svg, .cmp .slot-logo img { width: 22px; height: 22px; object-fit: contain; fill: currentColor; color: var(--text); }
+  .cmp .slot-logo b { font-size: 12px; }
+  .cmp .slot-pick {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 4px 6px 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    text-align: left;
+    cursor: pointer;
+  }
+  .cmp .slot-pick:focus-visible { outline: 2px solid var(--accent); border-radius: 6px; }
+  .cmp .slot-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cmp .slot.empty .slot-name { color: var(--text-2); font-weight: 500; }
+  .cmp .chev { flex: none; color: var(--text-2); transition: transform 0.25s var(--ease); }
+  .cmp .slot-pick[aria-expanded='true'] .chev { transform: rotate(180deg); }
+  .cmp .slot.open { z-index: 20; }
+  .cmp .slot-menu {
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22), 0 0 0 1px var(--line);
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    z-index: 20;
+    padding: 8px;
+    border-radius: 16px;
+    /* opaca: o texto da página não pode aparecer através da lista */
+    background: var(--bg);
+    animation: menuDrop 0.22s var(--ease);
+  }
+  @keyframes menuDrop { from { opacity: 0; transform: translateY(-4px); } }
+  .cmp .slot-menu input {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface);
+    font: inherit;
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+  }
+  .cmp .slot-menu input:focus { border-color: var(--accent); }
+  .cmp .slot-menu ul { list-style: none; margin: 6px 0 0; padding: 0; max-height: 300px; overflow-y: auto; overscroll-behavior: contain; }
+  .cmp .slot-menu li button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 7px 8px;
+    border: 0;
+    border-radius: 10px;
+    background: none;
+    font: inherit;
+    font-size: 14px;
+    color: var(--text);
+    text-align: left;
+    cursor: pointer;
+  }
+  .cmp .slot-menu li button:hover, .cmp .slot-menu li button.active { background: var(--line); }
+  .cmp .slot-menu li button:disabled { opacity: 0.4; cursor: default; }
+  .cmp .opt-logo { width: 26px; height: 26px; flex: none; display: grid; place-items: center; border-radius: 8px; background: var(--surface); }
+  .cmp .opt-logo svg, .cmp .opt-logo img { width: 17px; height: 17px; object-fit: contain; fill: currentColor; color: var(--text); }
+  .cmp .opt-logo b { font-size: 10px; }
+  .cmp .slot-menu .none { padding: 10px; font-size: 13px; color: var(--text-2); }
+  .cmp .slot-remove {
+    display: grid; place-items: center; width: 30px; height: 30px; flex: none;
+    border: 0; border-radius: 50%; background: var(--line); color: var(--text-2); cursor: pointer;
+  }
+  .cmp .slot-remove:hover { color: var(--text); }
+
+  /* abas de tipo (Desktop, Servidor, Celular, Embarcados) */
+  .cmp-types { position: relative; display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 4px; margin: 28px 0 0; border-radius: 980px; background: var(--line); }
+  .cmp-types button { position: relative; z-index: 1; padding: 8px 16px; border: 0; border-radius: 980px; background: none; font: inherit; font-size: 14px; font-weight: 500; color: var(--text-2); cursor: pointer; transition: color 0.3s; }
+  .cmp-types button[aria-selected='true'] { color: var(--text); }
+  /* pílula que desliza até a aba escolhida (posição e largura vêm do script) */
+  .cmp-pill {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 0;
+    width: 0;
+    border-radius: 980px;
+    background: var(--surface);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+    transform: translateX(var(--x, 4px));
+    transition: transform 0.45s var(--ease), width 0.45s var(--ease);
+  }
+  .cmp-pill.instant { transition: none; }
+  /* selos de grupo em cima de cada distro */
+  .cmp .cmp-groups { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin: 2px 0; }
+  .cmp .cmp-groups span { padding: 2px 8px; border-radius: 980px; font-size: 11px; font-weight: 600; background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+  .cmp .cmp-groups.off span { background: color-mix(in srgb, #ff9f0a 16%, transparent); color: #c76a00; }
+  :root[data-theme='dark'] .cmp .cmp-groups.off span { color: #ffb340; }
+
+  .cmp-tools { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+  .cmp .switch { display: inline-flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text-2); cursor: pointer; }
+  .cmp .switch input { position: absolute; opacity: 0; }
+  .cmp .switch .track { width: 40px; height: 24px; border-radius: 980px; background: var(--line); position: relative; transition: background 0.3s; }
+  .cmp .switch .track span { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); transition: transform 0.3s var(--ease); }
+  .cmp .switch input:checked + .track { background: #34c759; }
+  .cmp .switch input:checked + .track span { transform: translateX(16px); }
+  .cmp .switch input:focus-visible + .track { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .cmp .btn { font: inherit; font-size: 14px; }
+  .cmp-empty { padding: 40px 0; color: var(--text-2); }
+
+  /* ---------- tabela ---------- */
+  .cmp-wrap { text-align: left; }
+  .cmp-table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: 14px; }
+  .cmp-table thead th, .cmp-table .cmp-corner {
+    position: sticky;
+    top: calc(env(safe-area-inset-top, 0px) + 48px);
+    z-index: 2;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--line);
+  }
+  .cmp-table .cmp-corner { width: 22%; }
+  .cmp-head { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 8px; text-align: center; }
+  .cmp-logo { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 14px; background: var(--surface); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06); }
+  .cmp-logo svg, .cmp-logo img { width: 28px; height: 28px; object-fit: contain; fill: currentColor; color: var(--text); }
+  .cmp-head strong { font-size: 16px; letter-spacing: -0.02em; }
+  .cmp-head a { font-size: 12px; font-weight: 500; }
+  .cmp-section th {
+    padding: 26px 12px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    text-align: left;
+    border-bottom: 1px solid var(--line);
+  }
+  .cmp-table tbody th[scope='row'] { padding: 12px; font-weight: 500; color: var(--text-2); vertical-align: top; border-bottom: 1px solid var(--line); }
+  .cmp-table tbody th small { display: block; font-size: 11px; font-weight: 400; opacity: 0.8; margin-top: 2px; }
+  .cmp-table td { padding: 12px; vertical-align: top; border-bottom: 1px solid var(--line); border-left: 1px solid var(--line); line-height: 1.45; overflow-wrap: anywhere; }
+  .cmp-table tbody tr:not(.cmp-section):hover td, .cmp-table tbody tr:not(.cmp-section):hover th { background: color-mix(in srgb, var(--accent) 5%, transparent); }
+  .cmp-table td.best { background: color-mix(in srgb, #34c759 12%, transparent); font-weight: 600; }
+  .cmp-table td.best::after { content: ' ✓'; color: #34c759; font-weight: 700; }
+  .cmp-none { color: var(--text-2); opacity: 0.6; }
+  .cmp-list { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 4px; }
+  .cmp-list li { padding: 2px 8px; border-radius: 980px; font-size: 12px; background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--accent); }
+  .cmp-bars { display: inline-flex; align-items: center; gap: 3px; }
+  .cmp-bars i { width: 14px; height: 6px; border-radius: 3px; background: var(--line); }
+  .cmp-bars i.on { background: var(--accent); }
+  .cmp-bars em { margin-left: 6px; font-style: normal; font-size: 12px; color: var(--text-2); }
+  .cmp.only-diff .cmp-table tr.same { display: none; }
+  .cmp-note { margin-top: 18px; font-size: 12px; color: var(--text-2); }
+
+  @media (max-width: 860px) {
+    .cmp-pick { grid-template-columns: 1fr 1fr; }
+    /* no celular a tabela rola de lado, com a coluna de rótulos fixa */
+    .cmp-wrap { overflow-x: auto; margin-inline: -22px; padding-inline: 22px; }
+    .cmp-table { min-width: calc(130px + var(--cols) * 150px); }
+    .cmp-table .cmp-corner { width: 130px; }
+    .cmp-table thead th, .cmp-table .cmp-corner { position: static; }
+    .cmp-table tbody th[scope='row'], .cmp-table .cmp-corner { position: sticky; left: 0; z-index: 1; background: var(--bg); }
+    .cmp-section th { position: sticky; left: 0; z-index: 1; background: var(--bg); }
+  }
+  @media (max-width: 560px) {
+    .cmp-pick { grid-template-columns: 1fr; gap: 8px; }
+    /* abas numa linha só; se não couberem (iPhone SE), a faixa rola de lado */
+    .cmp-types { gap: 2px; flex-wrap: nowrap; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+    .cmp-types::-webkit-scrollbar { display: none; }
+    .cmp-types button { flex: none; }
+    .cmp-types button { padding: 7px 11px; font-size: 13px; }
+    .cmp .slot { padding: 10px 12px; }
+  }
+</style>
+
+<script>
+  import { compareTable, parseIds, parseType, DEFAULTS, comparable, fitsType, type CmpType } from '../data/compare';
+  import { tr } from '../i18n';
+  import { tableHTML, logoHTML } from '../scripts/compare-render';
+  import { wiki } from '../data/wiki';
+  import { type Lang, deepTr } from '../i18n';
+
+  const lang: Lang = document.documentElement.lang.startsWith('en') ? 'en' : 'pt';
+  const data = JSON.parse(document.getElementById('cmp-data')!.textContent!);
+  const names = new Map(deepTr(lang, wiki).map((n) => [n.id, n.name]));
+  const section = document.querySelector<HTMLElement>('.cmp')!;
+  const table = document.getElementById('cmp-table')!;
+  const empty = document.getElementById('cmp-empty')!;
+  const slots = [...document.querySelectorAll<HTMLElement>('.slot')];
+  const addLabel = slots[0].querySelector('.slot-name')!.textContent!;
+  const noneLabel = tr(lang, 'Nenhuma distro encontrada');
+  const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+
+  // estado inicial: ?t=server&d=debian,rhel (link compartilhável) ou a comparação padrão do tipo
+  const params = new URLSearchParams(location.search);
+  let type: CmpType = parseType(params.get('t'));
+  let ids = parseIds(params.get('d'));
+  if (!params.has('d')) ids = [...DEFAULTS[type]];
+  const tabs = [...document.querySelectorAll<HTMLButtonElement>('[data-type]')];
+
+  function render() {
+    slots.forEach((slot, i) => {
+      slot.classList.toggle('empty', !ids[i]);
+      slot.querySelector('.slot-name')!.textContent = ids[i] ? names.get(ids[i]) ?? ids[i] : addLabel;
+      slot.querySelector<HTMLElement>('.slot-logo')!.innerHTML = ids[i] ? logoHTML(data.logos[ids[i]], names.get(ids[i]) ?? '') : '';
+      slot.querySelector<HTMLElement>('.slot-remove')!.hidden = !ids[i];
+    });
+    empty.hidden = ids.length >= 2;
+    table.hidden = ids.length < 2;
+    tabs.forEach((b) => b.setAttribute('aria-selected', String(b.dataset.type === type)));
+    movePill();
+    if (ids.length >= 2) table.innerHTML = tableHTML(compareTable(ids, lang, type), data.logos, data.labels, data.wikiPath);
+    // vírgulas sem codificar (?d=ubuntu,fedora): o link compartilhado fica legível
+    const tq = type === 'desktop' ? '' : `t=${type}&`;
+    history.replaceState(null, '', `${location.pathname}?${tq}d=${ids.join(',')}${location.hash}`);
+  }
+
+  /* ---------- Lista de distros de cada espaço ---------- */
+  // só as distros da aba escolhida, em ordem alfabética; as já escolhidas aparecem desativadas
+  const options = () =>
+    comparable.filter((n) => fitsType(n, type)).map((n) => ({ id: n.id, name: names.get(n.id) ?? n.name })).sort((a, b) => a.name.localeCompare(b.name));
+
+  function fill(slot: HTMLElement, i: number, q = '') {
+    // quem começa com o termo vem primeiro (com "ub", Ubuntu antes de Qubes OS)
+    const nq = norm(q);
+    const list = options()
+      .filter((o) => norm(o.name).includes(nq))
+      .sort((a, b) => Number(!norm(a.name).split(/\s+/).some((w) => w.startsWith(nq))) - Number(!norm(b.name).split(/\s+/).some((w) => w.startsWith(nq))));
+    slot.querySelector('ul')!.innerHTML = list.length
+      ? list.map((o) => `<li><button type="button" role="option" data-id="${o.id}" ${ids.includes(o.id) && ids[i] !== o.id ? 'disabled' : ''} aria-selected="${ids[i] === o.id}"><span class="opt-logo">${logoHTML(data.logos[o.id], o.name)}</span>${esc(o.name)}</button></li>`).join('')
+      : `<li class="none">${esc(noneLabel)}</li>`;
+    slot.querySelector('ul button:not(:disabled)')?.classList.add('active');
+  }
+  function close(slot: HTMLElement) {
+    slot.classList.remove('open');
+    slot.querySelector<HTMLElement>('.slot-menu')!.hidden = true;
+    slot.querySelector('.slot-pick')!.setAttribute('aria-expanded', 'false');
+  }
+  function choose(i: number, id: string) {
+    const next = [...ids];
+    next[Math.min(i, next.length)] = id; // espaço vazio: vai para o fim da fila
+    ids = next.filter(Boolean);
+    render();
+  }
+  slots.forEach((slot, i) => {
+    const pickBtn = slot.querySelector<HTMLButtonElement>('.slot-pick')!;
+    const menu = slot.querySelector<HTMLElement>('.slot-menu')!;
+    const input = menu.querySelector('input')!;
+    pickBtn.addEventListener('click', () => {
+      const open = menu.hidden;
+      slots.forEach(close);
+      if (!open) return;
+      slot.classList.add('open');
+      menu.hidden = false;
+      pickBtn.setAttribute('aria-expanded', 'true');
+      input.value = '';
+      fill(slot, i);
+      input.focus({ preventScroll: true });
+      // no celular, a lista do último espaço abre abaixo da dobra: rola até ela aparecer
+      menu.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    });
+    input.addEventListener('input', () => fill(slot, i, input.value));
+    input.addEventListener('keydown', (e) => {
+      const btns = [...menu.querySelectorAll<HTMLButtonElement>('ul button:not(:disabled)')];
+      const at = btns.findIndex((b) => b.classList.contains('active'));
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const to = btns[Math.max(0, Math.min(btns.length - 1, at + (e.key === 'ArrowDown' ? 1 : -1)))];
+        btns.forEach((b) => b.classList.toggle('active', b === to));
+        to?.scrollIntoView({ block: 'nearest' });
+      }
+      if (e.key === 'Enter' && btns[at]) { e.preventDefault(); close(slot); choose(i, btns[at].dataset.id!); pickBtn.focus(); }
+      if (e.key === 'Escape') { close(slot); pickBtn.focus(); }
+    });
+    menu.addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-id]');
+      if (!b || b.disabled) return;
+      close(slot);
+      choose(i, b.dataset.id!);
+    });
+  });
+  // tocar fora fecha a lista aberta
+  document.addEventListener('pointerdown', (e) => {
+    for (const slot of slots) if (!slot.contains(e.target as Node)) close(slot);
+  });
+  document.querySelectorAll<HTMLButtonElement>('[data-remove]').forEach((b) =>
+    b.addEventListener('click', () => {
+      ids.splice(Number(b.dataset.remove), 1);
+      render();
+    }),
+  );
+  /* ---------- Animação da troca de tipo ---------- */
+  const pill = document.querySelector<HTMLElement>('.cmp-pill')!;
+  const tabBar = pill.parentElement!;
+  const reducedMotion = document.documentElement.classList.contains('reduced');
+  function movePill() {
+    const on = tabs.find((b) => b.dataset.type === type)!;
+    pill.style.setProperty('--x', `${on.offsetLeft}px`);
+    pill.style.width = `${on.offsetWidth}px`;
+    // no celular a faixa rola de lado: garante que a aba escolhida apareça
+    if (tabBar.scrollWidth > tabBar.clientWidth) tabBar.scrollTo({ left: on.offsetLeft - 16, behavior: reducedMotion ? 'auto' : 'smooth' });
+  }
+  // posição inicial sem deslizar; acompanha mudanças de tamanho (fonte carregando, girar o celular)
+  pill.classList.add('instant');
+  requestAnimationFrame(() => { movePill(); requestAnimationFrame(() => pill.classList.remove('instant')); });
+  new ResizeObserver(() => { pill.classList.add('instant'); movePill(); requestAnimationFrame(() => pill.classList.remove('instant')); }).observe(tabBar);
+
+  // tabela e espaços saem e entram com um leve deslize ao trocar de tipo
+  async function swap(update: () => void) {
+    const parts = [document.getElementById('cmp-pick')!, table];
+    if (reducedMotion) return update();
+    const out = parts.map((el) => el.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(8px)' }], { duration: 160, easing: 'ease-in', fill: 'forwards' }));
+    await Promise.all(out.map((x) => x.finished));
+    update();
+    out.forEach((x) => x.cancel()); // a saída fica presa no fim (fill: forwards); sem cancelar, a tabela sumiria
+    parts.forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateY(-8px)' }, { opacity: 1, transform: 'none' }], { duration: 320, delay: i * 60, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'backwards' }));
+  }
+
+  // trocar o tipo muda as linhas; se nenhuma distro escolhida for daquele tipo, carrega as do tipo
+  tabs.forEach((b) =>
+    b.addEventListener('click', () => {
+      // cada tipo tem a própria lista de distros: a comparação recomeça com as três padrão do tipo
+      if (b.dataset.type === type) return;
+      type = b.dataset.type as CmpType;
+      tabs.forEach((x) => x.setAttribute('aria-selected', String(x === b)));
+      movePill(); // a pílula começa a deslizar já no clique
+      slots.forEach(close);
+      swap(() => {
+        ids = [...DEFAULTS[type]];
+        render();
+      });
+    }),
+  );
+  document.getElementById('only-diff')!.addEventListener('change', (e) =>
+    section.classList.toggle('only-diff', (e.target as HTMLInputElement).checked),
+  );
+  const share = document.getElementById('share') as HTMLButtonElement;
+  share.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(location.href); } catch {}
+    const old = share.textContent;
+    share.textContent = share.dataset.copied!;
+    setTimeout(() => (share.textContent = old), 1800);
+  });
+
+  render();
+</script>

@@ -2,39 +2,83 @@
 import '../styles/global.css';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
+import { type Lang, tr, htmlLang, ogLocale, localePath, stripLang } from '../i18n';
+import { decideLang, countryFromTrace } from '../i18n/detect';
 
 interface Props {
   title: string;
   description?: string;
   fullscreen?: boolean; // página ocupa a tela toda, sem rolagem nem rodapé
+  feed?: boolean; // no celular, as seções [data-screen] viram telas inteiras, uma por vez (como stories)
+  lang?: Lang;
 }
 
-const { title, description = 'Tudo sobre Linux, sem enrolação.', fullscreen = false } = Astro.props;
+const { title, fullscreen = false, feed = false, lang = 'pt' } = Astro.props;
+const t = (s: string) => tr(lang, s);
+const description = Astro.props.description ?? t('Tudo sobre Linux, sem enrolação.');
+const page = stripLang(Astro.url.pathname);
+const alt = (l: Lang) => new URL(localePath(l, page), Astro.site).href;
+
+// script do <head>: usa a mesma decideLang testada em tests/detect.test.ts
+const langScript = `(() => {
+  const decideLang = ${decideLang.toString()};
+  const countryFromTrace = ${countryFromTrace.toString()};
+  const current = ${JSON.stringify(lang)};
+  const page = ${JSON.stringify(page)};
+  const go = (l) => {
+    if (l === current) return;
+    const path = l === 'en' ? (page === '/' ? '/en/' : '/en' + page) : page;
+    location.replace(path + location.search + location.hash);
+  };
+  let stored = null;
+  try { stored = localStorage.getItem('lang'); } catch {}
+  if (stored) return go(decideLang({ stored, country: null, navLang: null }));
+  // sem escolha salva: só a versão em português detecta o país (um link em inglês é respeitado)
+  if (current !== 'pt') return;
+  let country = null;
+  try { country = sessionStorage.getItem('country'); } catch {}
+  const decide = (c) => go(decideLang({ stored: null, country: c, navLang: navigator.language }));
+  if (country) return decide(country);
+  fetch('/cdn-cgi/trace', { cache: 'no-store' })
+    .then((r) => (r.ok ? r.text() : ''))
+    .then((text) => {
+      const c = countryFromTrace(text);
+      try { if (c) sessionStorage.setItem('country', c); } catch {}
+      decide(c);
+    })
+    .catch(() => decide(null));
+})();`;
 ---
 
 <!doctype html>
-<html lang="pt-BR" class="no-js">
+<html lang={htmlLang[lang]} class:list={['no-js', { feed }]}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
+    <!-- versões em outros idiomas, para buscadores -->
+    <link rel="alternate" hreflang="pt-BR" href={alt('pt')} />
+    <link rel="alternate" hreflang="en-US" href={alt('en')} />
+    <link rel="alternate" hreflang="x-default" href={alt('pt')} />
     <!-- prévia ao compartilhar o link (WhatsApp, Telegram, Discord, redes sociais): a imagem precisa de URL absoluta -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="DISTRO LINUX" />
-    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:locale" content={ogLocale[lang]} />
+    <meta property="og:locale:alternate" content={ogLocale[lang === 'pt' ? 'en' : 'pt']} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={new URL(Astro.url.pathname, Astro.site)} />
-    <meta property="og:image" content={new URL('/og.jpg', Astro.site)} />
+    <meta property="og:image" content={new URL(lang === 'en' ? '/og-en.jpg' : '/og.jpg', Astro.site)} />
     <meta property="og:image:type" content="image/jpeg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="DISTRO LINUX: encontre o Linux certo pra você" />
+    <meta property="og:image:alt" content={t('DISTRO LINUX: encontre o Linux certo pra você')} />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#1a1816" />
     <!-- ?v= força o navegador a buscar de novo quando o ícone muda -->
     <link rel="icon" href="/favicon.svg?v=3" type="image/svg+xml" />
     <title>{title}</title>
+    <script is:inline set:html={langScript} />
     <script is:inline>
       // aplica o tema antes de pintar a página (evita flash)
       (() => {
@@ -49,11 +93,13 @@ const { title, description = 'Tudo sobre Linux, sem enrolação.', fullscreen = 
     </script>
   </head>
   <body class:list={{ fullscreen }}>
-    <Nav />
-    <main>
+    <Nav lang={lang} />
+    <main data-feed-hint={feed ? t('Deslize para cima') : undefined}>
       <slot />
+      {/* no feed, o rodapé fica dentro da área que rola (é ela que rola, não a página) */}
+      {feed && <Footer lang={lang} />}
     </main>
-    {!fullscreen && <Footer />}
+    {!fullscreen && !feed && <Footer lang={lang} />}
     <script>
       import '../scripts/motion.ts';
     </script>

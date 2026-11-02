@@ -1,0 +1,94 @@
+---
+// Fim de cada página: aponta o passo seguinte da jornada (src/data/journey.ts) e mostra onde a pessoa está.
+import { type Lang, tr, localePath } from '../i18n';
+import { JOURNEY, stepOf } from '../data/journey';
+
+interface Props {
+  lang: Lang;
+  page: string; // href da página atual na jornada
+  headline?: string; // frase grande opcional (já traduzida); sem ela, o título do próximo passo
+}
+const { lang, page, headline } = Astro.props;
+const t = (s: string) => tr(lang, s);
+const { index, next } = stepOf(page);
+---
+
+{next && (
+  <section class="next section section-alt" data-screen>
+    <div class="container">
+      <p class="eyebrow" data-reveal>{t('Próximo passo')} · {index + 2} {t('de')} {JOURNEY.length}</p>
+      <h2 class="headline" data-reveal>
+        {headline ?? <span class="gradient-text">{t(next.title)}</span>}
+      </h2>
+      {headline && <p class="next-title" data-reveal>{t(next.title)}</p>}
+      <p class="lead" data-reveal>{t(next.pitch)}</p>
+      <div class="next-cta" data-reveal>
+        <a class="btn btn-primary" href={localePath(lang, next.href)}>{t('Ir para')} {t(next.label)} ›</a>
+      </div>
+      <ol class="trail" data-reveal aria-label={t('Etapas do site')}>
+        {JOURNEY.map((s, i) => (
+          <li class:list={{ done: i <= index, here: i === index, up: i === index + 1 }}>
+            <a href={localePath(lang, s.href)} aria-current={i === index ? 'step' : undefined}>
+              <i>{i + 1}</i><span>{t(s.label)}</span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+)}
+
+<style>
+  .next { overflow: hidden; }
+  .next-title { margin: 18px 0 0; font-size: clamp(22px, 3vw, 30px); font-weight: 700; letter-spacing: -0.03em; }
+  .next-cta { margin-top: 28px; }
+  .trail {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px 4px;
+    list-style: none;
+    margin: 48px auto 0;
+    padding: 0;
+    max-width: 760px;
+  }
+  .trail a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px 6px 6px;
+    border-radius: 980px;
+    font-size: 13px;
+    color: var(--text-2);
+    border: 1px solid transparent;
+  }
+  .trail a:hover { text-decoration: none; color: var(--text); }
+  .trail i {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    font-style: normal;
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--line);
+  }
+  .trail .done i { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); }
+  .trail .here a { color: var(--text); }
+  .trail .up a { border-color: var(--accent); color: var(--accent); }
+  .trail .up i { background: var(--accent); color: #fff; }
+  @media (max-width: 760px) {
+    .trail { margin-top: 32px; }
+    .trail span { display: none; } /* no celular, só os números */
+    .trail .up span { display: inline; }
+  }
+  /* celulares baixinhos (iPhone SE): a tela inteira precisa caber */
+  @media (max-width: 760px) and (max-height: 720px) {
+    .headline { font-size: 36px; }
+    .next-title { margin-top: 10px; font-size: 20px; }
+    .lead { font-size: 15px; margin-top: 8px; }
+    .next-cta { margin-top: 16px; }
+    .trail { margin-top: 18px; }
+  }
+</style>

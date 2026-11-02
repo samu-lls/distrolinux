@@ -1,33 +1,39 @@
 ---
 import Logo from './Logo.astro';
+import { type Lang, tr, localePath, stripLang } from '../i18n';
+import { PIX_CODE, PIX_KEY, BMC_URL } from '../data/donate';
+import { JOURNEY } from '../data/journey';
 
-const links = [
-  { href: '/', label: 'Windows vs Linux' },
-  { href: '/wiki', label: 'Wiki' },
-  { href: '/distros', label: 'Escolha sua distro' },
-  { href: '/quiz', label: 'Quiz' },
-];
-const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+const { lang = 'pt' } = Astro.props as { lang?: Lang };
+const t = (s: string) => tr(lang, s);
+// a navbar segue a ordem da jornada (do zero até a Wiki)
+const links = JOURNEY.map((s) => ({ href: s.href, label: t(s.label) }));
+const page = stripLang(Astro.url.pathname).replace(/\/$/, '') || '/';
+const other = (l: Lang) => localePath(l, page);
 ---
 
 <header class="nav-wrap">
   <nav class="nav" aria-label="Principal">
-    <a class="brand" href="/" aria-label="Distro Linux, início">
+    <a class="brand" href={localePath(lang, '/')} aria-label={t('Distro Linux, início')}>
       <Logo size={28} />
     </a>
     <ul class="links" id="nav-links">
       {links.map((l) => (
-        <li>
-          <a
-            href={l.href}
-            class:list={{ active: l.href === path, soon: l.soon }}
-            aria-disabled={l.soon ? 'true' : undefined}
-            title={l.soon ? 'Em breve' : undefined}
-          >{l.label}</a>
-        </li>
+        <li><a href={localePath(lang, l.href)} class:list={{ active: l.href === page }}>{l.label}</a></li>
       ))}
+      <li class="lang-item">
+        <span class="lang-label">{t('Idioma')}</span>
+        <span class="lang-switch">
+          <a href={other('pt')} hreflang="pt-BR" data-lang="pt" class:list={{ on: lang === 'pt' }}>PT</a>
+          <a href={other('en')} hreflang="en-US" data-lang="en" class:list={{ on: lang === 'en' }}>EN</a>
+        </span>
+      </li>
     </ul>
-    <button class="theme-toggle" id="theme-toggle" aria-label="Alternar tema claro/escuro">
+    <span class="lang-switch desktop" aria-label={t('Idioma')}>
+      <a href={other('pt')} hreflang="pt-BR" data-lang="pt" class:list={{ on: lang === 'pt' }} aria-label="Português">PT</a>
+      <a href={other('en')} hreflang="en-US" data-lang="en" class:list={{ on: lang === 'en' }} aria-label="English">EN</a>
+    </span>
+    <button class="theme-toggle" id="theme-toggle" aria-label={t('Alternar tema claro/escuro')}>
       <svg class="sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <circle cx="12" cy="12" r="4.5" />
         <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
@@ -36,17 +42,40 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
         <path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z" />
       </svg>
     </button>
-    <a class="donate" href="https://buymeacoffee.com/samulls" target="_blank" rel="noopener" aria-label="Doações (Buy Me a Coffee)">
+    <a class="donate" id="donate" href={BMC_URL} target="_blank" rel="noopener" data-lang-page={lang} aria-label={t('Doações (Buy Me a Coffee)')}>
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M17 8h1a4 4 0 1 1 0 8h-1" /><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" /><path d="M6 2v2M10 2v2M14 2v2" />
       </svg>
-      <span>Doações</span>
+      <span>{t('Doações')}</span>
     </a>
-    <button class="menu-toggle" id="menu-toggle" aria-label="Abrir menu" aria-expanded="false" aria-controls="nav-links">
+    <button class="menu-toggle" id="menu-toggle" aria-label={t('Abrir menu')} data-open-label={t('Abrir menu')} data-close-label={t('Fechar menu')} aria-expanded="false" aria-controls="nav-links">
       <span></span><span></span>
     </button>
   </nav>
 </header>
+
+<!-- doação por Pix: abre para quem está no Brasil; o resto do mundo segue o link do Buy Me a Coffee -->
+<dialog class="pix glass" id="pix-dialog" aria-labelledby="pix-title">
+  <button class="pix-close" id="pix-close" aria-label={t('Fechar')}>
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
+  </button>
+  <p class="pix-eyebrow">{t('Doações')}</p>
+  <h2 id="pix-title">{t('Apoie o projeto')}</h2>
+  <p class="pix-lead">{t('Qualquer valor já ajuda a manter o site no ar. Escaneie o QR Code no app do seu banco ou copie o código Pix.')}</p>
+  <div class="pix-qr"><img src="/pix-qr.svg" width="220" height="220" alt={t('QR Code do Pix para doação')} /></div>
+  <div class="pix-field">
+    <span class="pix-label">{t('Pix copia e cola')}</span>
+    <code id="pix-code">{PIX_CODE}</code>
+    <button class="pix-copy" data-copy={PIX_CODE}>{t('Copiar código')}</button>
+  </div>
+  <div class="pix-field">
+    <span class="pix-label">{t('Chave aleatória')}</span>
+    <code>{PIX_KEY}</code>
+    <button class="pix-copy" data-copy={PIX_KEY}>{t('Copiar chave')}</button>
+  </div>
+  <p class="pix-alt">{t('Está fora do Brasil?')} <a href={BMC_URL} target="_blank" rel="noopener">{t('Doe em dólar pelo Buy Me a Coffee ›')}</a></p>
+  <span class="pix-copied" data-label={t('Copiado!')} hidden></span>
+</dialog>
 
 <script>
   // menu do celular: abre/fecha o painel de links
@@ -55,12 +84,67 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
   const setOpen = (open: boolean) => {
     wrap.classList.toggle('open', open);
     btn.setAttribute('aria-expanded', String(open));
-    btn.setAttribute('aria-label', open ? 'Fechar menu' : 'Abrir menu');
+    btn.setAttribute('aria-label', (open ? btn.dataset.closeLabel : btn.dataset.openLabel) ?? '');
   };
   btn.addEventListener('click', () => setOpen(!wrap.classList.contains('open')));
   wrap.querySelectorAll('.links a').forEach((a) => a.addEventListener('click', () => setOpen(false)));
   addEventListener('keydown', (e) => e.key === 'Escape' && setOpen(false));
-  matchMedia('(min-width: 641px)').addEventListener('change', () => setOpen(false));
+  matchMedia('(min-width: 901px)').addEventListener('change', () => setOpen(false));
+
+  /* ---------- Doações: Pix no Brasil, Buy Me a Coffee fora ---------- */
+  import { countryFromTrace, donationMethod } from '../i18n/detect';
+  const donate = document.getElementById('donate') as HTMLAnchorElement;
+  const dialog = document.getElementById('pix-dialog') as HTMLDialogElement;
+  const country = () => {
+    try { return sessionStorage.getItem('country'); } catch { return null; }
+  };
+  // as páginas em inglês não perguntam o país no <head>; pergunta aqui para o botão já saber na hora do clique
+  if (!country()) {
+    fetch('/cdn-cgi/trace', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.text() : ''))
+      .then((text) => {
+        const c = countryFromTrace(text);
+        try { if (c) sessionStorage.setItem('country', c); } catch {}
+      })
+      .catch(() => {});
+  }
+  // decisão síncrona: abrir uma aba depois de um await seria bloqueado pelo navegador
+  donate.addEventListener('click', (e) => {
+    if (donationMethod(country(), donate.dataset.langPage === 'en' ? 'en' : 'pt') !== 'pix') return; // segue o link
+    e.preventDefault();
+    setOpen(false);
+    dialog.showModal();
+  });
+  document.getElementById('pix-close')!.addEventListener('click', () => dialog.close());
+  dialog.addEventListener('click', (e) => e.target === dialog && dialog.close()); // clique fora fecha
+
+  const copied = dialog.querySelector<HTMLElement>('.pix-copied')!;
+  dialog.querySelectorAll<HTMLButtonElement>('[data-copy]').forEach((btn) =>
+    btn.addEventListener('click', async () => {
+      const text = btn.dataset.copy!;
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        // sem clipboard (página sem https): copia pelo jeito antigo
+        const ta = Object.assign(document.createElement('textarea'), { value: text });
+        dialog.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+      }
+      const old = btn.textContent;
+      btn.textContent = copied.dataset.label!;
+      btn.classList.add('done');
+      setTimeout(() => { btn.textContent = old; btn.classList.remove('done'); }, 1800);
+    }),
+  );
+
+  // trocar de idioma pelo seletor fica salvo e vence a detecção automática pela localização
+  document.querySelectorAll<HTMLAnchorElement>('[data-lang]').forEach((a) =>
+    a.addEventListener('click', () => {
+      try { localStorage.setItem('lang', a.dataset.lang!); } catch {}
+    }),
+  );
 </script>
 
 <style>
@@ -72,7 +156,8 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
     right: 0;
     z-index: 100;
     padding-top: env(safe-area-inset-top, 0px);
-    background: color-mix(in srgb, var(--bg) 72%, transparent);
+    /* opaco o bastante para títulos grandes passando por baixo não brigarem com o logo */
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     border-bottom: 1px solid var(--line);
@@ -100,6 +185,7 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
     display: block;
     padding: 6px 12px;
     font-size: 12px;
+    white-space: nowrap;
     color: var(--text-2);
     transition: color 0.2s;
   }
@@ -142,14 +228,111 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
   .donate:hover svg { animation: steam 0.8s var(--ease); }
   @keyframes steam { 40% { transform: translateY(-2px) rotate(-8deg); } }
 
+  /* seletor de idioma */
+  .lang-switch { display: inline-flex; padding: 2px; border-radius: 980px; border: 1px solid var(--line); }
+  .lang-switch a {
+    padding: 3px 8px;
+    border-radius: 980px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--text-2);
+    transition: background 0.2s, color 0.2s;
+  }
+  .lang-switch a:hover { text-decoration: none; color: var(--text); }
+  .lang-switch a.on { background: var(--text); color: var(--bg); }
+  .lang-item { display: none; }
+
+  /* ---------- Janela do Pix ---------- */
+  .pix {
+    width: min(420px, calc(100vw - 32px));
+    max-height: calc(100svh - 32px);
+    overflow-y: auto;
+    padding: 30px 28px 24px;
+    border-radius: 28px;
+    color: var(--text);
+    background: color-mix(in srgb, var(--bg) 90%, transparent);
+    text-align: center;
+  }
+  .pix[open] { animation: pixIn 0.45s var(--ease); }
+  .pix::backdrop { background: rgba(0, 0, 0, 0.35); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+  @keyframes pixIn { from { opacity: 0; transform: translateY(16px) scale(0.97); } }
+  .pix-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--line);
+    color: var(--text);
+    cursor: pointer;
+  }
+  .pix-eyebrow { margin: 0; font-size: 13px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.07em; }
+  .pix h2 { margin: 4px 0 8px; font-size: 28px; letter-spacing: -0.03em; }
+  .pix-lead { margin: 0 auto; max-width: 320px; font-size: 14px; line-height: 1.5; color: var(--text-2); }
+  .pix-qr {
+    width: 220px;
+    margin: 20px auto 18px;
+    padding: 10px;
+    border-radius: 20px;
+    background: #fff; /* QR precisa de fundo claro para os leitores, nos dois temas */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+  }
+  .pix-qr img { width: 100%; height: auto; display: block; }
+  .pix-field {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px 10px;
+    align-items: center;
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    text-align: left;
+  }
+  .pix-label { grid-column: 1 / -1; font-size: 11px; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.06em; }
+  .pix-field code {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font: 12px ui-monospace, 'SF Mono', Menlo, monospace;
+    color: var(--text);
+  }
+  .pix-copy {
+    padding: 6px 12px;
+    border: 0;
+    border-radius: 980px;
+    background: var(--accent);
+    color: #fff;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: transform 0.2s var(--ease), background 0.2s;
+  }
+  .pix-copy:active { transform: scale(0.95); }
+  .pix-copy.done { background: #34c759; }
+  .pix-alt { margin: 18px 0 0; font-size: 13px; color: var(--text-2); }
+
   .menu-toggle { display: none; }
 
-  @media (max-width: 640px) {
+  @media (max-width: 900px) {
     .nav { gap: 4px; width: calc(100% - 32px); }
     .brand { margin-right: auto; }
     /* no celular, só o ícone da xícara */
     .donate { width: 34px; height: 34px; padding: 0; justify-content: center; margin-left: 4px; }
     .donate span { display: none; }
+    /* no celular o seletor de idioma vai para dentro do menu */
+    .lang-switch.desktop { display: none; }
+    .lang-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 4px 4px; }
+    .lang-label { font-size: 15px; color: var(--text-2); }
+    .lang-item .lang-switch a { font-size: 14px; padding: 6px 14px; }
     .menu-toggle {
       display: grid;
       place-content: center;
@@ -201,6 +384,8 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
     .open .links li:nth-child(2) { animation-delay: 0.04s; }
     .open .links li:nth-child(3) { animation-delay: 0.08s; }
     .open .links li:nth-child(4) { animation-delay: 0.12s; }
+    .open .links li:nth-child(5) { animation-delay: 0.16s; }
+    .open .links li:nth-child(6) { animation-delay: 0.2s; }
   }
   @keyframes menuIn { from { opacity: 0; transform: translateY(-6px); } }
 </style>

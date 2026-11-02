@@ -2,75 +2,14 @@
 // Cada critério devolve um valor de -1 (diverge) a +1 (combina) e um motivo, que aparece no resultado.
 // Facilidade, configuração e terminal vêm da Wiki (wiki.ts); o restante do perfil está em `traits`.
 
-import { wiki, type WikiNode } from './wiki';
+import { wiki, inQuiz, type WikiNode, type Profile } from './wiki';
 
-type Use = 'desktop' | 'dev' | 'server' | 'security' | 'creative' | 'gaming' | 'learn' | 'privacy' | 'portable';
-type Level = 0 | 1 | 2;
-
-export interface Traits {
-  gaming: Level;      // 2 = feita para jogos
-  old: Level;         // 2 = ótima em PC fraco/antigo
-  nvidia: Level;      // 2 = driver NVIDIA pronto
-  look: 'windows' | 'mac' | 'own' | 'custom' | 'any'; // visual padrão (custom = você monta)
-  release: 'fixed' | 'rolling' | 'immutable' | 'source' | 'live';
-  systemd: boolean | 'both';
-  nonfree: Level;     // 2 = drivers/codecs fechados já vêm prontos; 0 = só software livre por padrão
-  privacy: Level;     // 2 = foco em privacidade/anonimato
-  telemetry?: boolean;
-  br?: boolean;       // boa compatibilidade com bancos brasileiros e gov.br
-  uses: Use[];
-  custom: Level;      // quanto dá para personalizar
-  docs: Level;        // tamanho da comunidade e da documentação
-}
-
-export const traits: Record<string, Traits> = {
-  debian: { gaming: 1, old: 1, nvidia: 1, look: 'any', release: 'fixed', systemd: true, nonfree: 1, privacy: 1, uses: ['desktop', 'server', 'dev'], custom: 1, docs: 2 },
-  ubuntu: { gaming: 1, old: 0, nvidia: 2, look: 'own', release: 'fixed', systemd: true, nonfree: 2, privacy: 0, telemetry: true, uses: ['desktop', 'dev', 'server'], custom: 1, docs: 2 },
-  devuan: { gaming: 0, old: 1, nvidia: 1, look: 'any', release: 'fixed', systemd: false, nonfree: 1, privacy: 1, uses: ['desktop', 'server'], custom: 1, docs: 1 },
-  mx: { gaming: 1, old: 2, nvidia: 1, look: 'windows', release: 'fixed', systemd: false, nonfree: 2, privacy: 1, uses: ['desktop'], custom: 1, docs: 1 },
-  antix: { gaming: 0, old: 2, nvidia: 0, look: 'own', release: 'fixed', systemd: false, nonfree: 1, privacy: 1, uses: ['desktop', 'portable'], custom: 1, docs: 1 },
-  knoppix: { gaming: 0, old: 1, nvidia: 0, look: 'own', release: 'live', systemd: false, nonfree: 1, privacy: 1, uses: ['portable'], custom: 0, docs: 1 },
-  deepin: { gaming: 1, old: 0, nvidia: 1, look: 'mac', release: 'fixed', systemd: true, nonfree: 1, privacy: 0, telemetry: true, uses: ['desktop'], custom: 1, docs: 1 },
-  tails: { gaming: 0, old: 1, nvidia: 0, look: 'own', release: 'live', systemd: true, nonfree: 0, privacy: 2, uses: ['privacy', 'portable'], custom: 0, docs: 1 },
-  kali: { gaming: 0, old: 1, nvidia: 1, look: 'own', release: 'rolling', systemd: true, nonfree: 1, privacy: 1, uses: ['security'], custom: 1, docs: 2 },
-  parrot: { gaming: 0, old: 1, nvidia: 1, look: 'own', release: 'fixed', systemd: true, nonfree: 1, privacy: 2, uses: ['security', 'privacy', 'desktop'], custom: 1, docs: 1 },
-  mint: { gaming: 1, old: 1, nvidia: 2, look: 'windows', release: 'fixed', systemd: true, nonfree: 2, privacy: 1, uses: ['desktop'], custom: 1, docs: 2 },
-  zorin: { gaming: 1, old: 1, nvidia: 2, look: 'windows', release: 'fixed', systemd: true, nonfree: 2, privacy: 0, telemetry: true, uses: ['desktop'], custom: 1, docs: 1 },
-  popos: { gaming: 2, old: 0, nvidia: 2, look: 'mac', release: 'fixed', systemd: true, nonfree: 2, privacy: 1, uses: ['desktop', 'dev', 'gaming'], custom: 1, docs: 1 },
-  elementary: { gaming: 0, old: 0, nvidia: 1, look: 'mac', release: 'fixed', systemd: true, nonfree: 1, privacy: 1, uses: ['desktop', 'creative'], custom: 0, docs: 1 },
-  kubuntu: { gaming: 1, old: 0, nvidia: 2, look: 'windows', release: 'fixed', systemd: true, nonfree: 2, privacy: 0, telemetry: true, uses: ['desktop', 'creative'], custom: 2, docs: 2 },
-  xubuntu: { gaming: 1, old: 1, nvidia: 2, look: 'windows', release: 'fixed', systemd: true, nonfree: 2, privacy: 0, telemetry: true, uses: ['desktop'], custom: 1, docs: 2 },
-  lubuntu: { gaming: 0, old: 2, nvidia: 1, look: 'windows', release: 'fixed', systemd: true, nonfree: 2, privacy: 0, telemetry: true, uses: ['desktop'], custom: 1, docs: 1 },
-  ubuntumate: { gaming: 1, old: 1, nvidia: 2, look: 'windows', release: 'fixed', systemd: true, nonfree: 2, privacy: 0, telemetry: true, uses: ['desktop'], custom: 1, docs: 1 },
-  puppy: { gaming: 0, old: 2, nvidia: 0, look: 'own', release: 'live', systemd: false, nonfree: 1, privacy: 1, uses: ['portable', 'desktop'], custom: 1, docs: 1 },
-  arch: { gaming: 1, old: 1, nvidia: 1, look: 'custom', release: 'rolling', systemd: true, nonfree: 1, privacy: 1, uses: ['learn', 'dev'], custom: 2, docs: 2 },
-  manjaro: { gaming: 1, old: 1, nvidia: 2, look: 'any', release: 'rolling', systemd: true, nonfree: 2, privacy: 1, uses: ['desktop', 'gaming'], custom: 2, docs: 1 },
-  biglinux: { gaming: 1, old: 0, nvidia: 2, look: 'windows', release: 'rolling', systemd: true, nonfree: 2, privacy: 1, br: true, uses: ['desktop'], custom: 1, docs: 1 },
-  artix: { gaming: 0, old: 1, nvidia: 1, look: 'custom', release: 'rolling', systemd: false, nonfree: 1, privacy: 1, uses: ['learn'], custom: 2, docs: 1 },
-  cachyos: { gaming: 2, old: 0, nvidia: 2, look: 'any', release: 'rolling', systemd: true, nonfree: 2, privacy: 1, uses: ['gaming', 'dev'], custom: 2, docs: 1 },
-  garuda: { gaming: 2, old: 0, nvidia: 2, look: 'own', release: 'rolling', systemd: true, nonfree: 2, privacy: 1, uses: ['gaming'], custom: 2, docs: 1 },
-  steamos: { gaming: 2, old: 0, nvidia: 0, look: 'own', release: 'immutable', systemd: true, nonfree: 2, privacy: 1, uses: ['gaming'], custom: 0, docs: 1 },
-  chimeraos: { gaming: 2, old: 0, nvidia: 1, look: 'own', release: 'immutable', systemd: true, nonfree: 2, privacy: 1, uses: ['gaming'], custom: 0, docs: 0 },
-  blackarch: { gaming: 0, old: 1, nvidia: 1, look: 'custom', release: 'rolling', systemd: true, nonfree: 1, privacy: 1, uses: ['security', 'learn'], custom: 2, docs: 1 },
-  fedora: { gaming: 1, old: 0, nvidia: 1, look: 'own', release: 'fixed', systemd: true, nonfree: 0, privacy: 1, telemetry: true, uses: ['desktop', 'dev'], custom: 1, docs: 2 },
-  rhel: { gaming: 0, old: 0, nvidia: 1, look: 'own', release: 'fixed', systemd: true, nonfree: 1, privacy: 1, uses: ['server'], custom: 0, docs: 2 },
-  rocky: { gaming: 0, old: 0, nvidia: 1, look: 'own', release: 'fixed', systemd: true, nonfree: 1, privacy: 1, uses: ['server'], custom: 0, docs: 1 },
-  nobara: { gaming: 2, old: 0, nvidia: 2, look: 'windows', release: 'fixed', systemd: true, nonfree: 2, privacy: 1, uses: ['gaming', 'creative', 'desktop'], custom: 1, docs: 1 },
-  bazzite: { gaming: 2, old: 0, nvidia: 2, look: 'any', release: 'immutable', systemd: true, nonfree: 2, privacy: 1, uses: ['gaming', 'desktop'], custom: 1, docs: 1 },
-  qubes: { gaming: 0, old: 0, nvidia: 0, look: 'own', release: 'fixed', systemd: true, nonfree: 1, privacy: 2, uses: ['privacy', 'security'], custom: 0, docs: 1 },
-  leap: { gaming: 1, old: 0, nvidia: 1, look: 'any', release: 'fixed', systemd: true, nonfree: 1, privacy: 1, uses: ['desktop', 'server'], custom: 2, docs: 2 },
-  tumbleweed: { gaming: 1, old: 0, nvidia: 1, look: 'any', release: 'rolling', systemd: true, nonfree: 1, privacy: 1, uses: ['desktop', 'dev'], custom: 2, docs: 2 },
-  regata: { gaming: 2, old: 0, nvidia: 2, look: 'windows', release: 'fixed', systemd: true, nonfree: 2, privacy: 1, br: true, uses: ['gaming', 'desktop'], custom: 1, docs: 1 },
-  gentoo: { gaming: 1, old: 1, nvidia: 1, look: 'custom', release: 'source', systemd: 'both', nonfree: 1, privacy: 1, uses: ['learn'], custom: 2, docs: 2 },
-  slackware: { gaming: 0, old: 1, nvidia: 1, look: 'custom', release: 'fixed', systemd: false, nonfree: 1, privacy: 1, uses: ['learn', 'server'], custom: 2, docs: 1 },
-  void: { gaming: 0, old: 2, nvidia: 1, look: 'custom', release: 'rolling', systemd: false, nonfree: 1, privacy: 1, uses: ['learn', 'dev'], custom: 2, docs: 1 },
-  solus: { gaming: 1, old: 0, nvidia: 2, look: 'own', release: 'rolling', systemd: true, nonfree: 2, privacy: 1, uses: ['desktop'], custom: 1, docs: 1 },
-  nixos: { gaming: 1, old: 0, nvidia: 1, look: 'custom', release: 'fixed', systemd: true, nonfree: 1, privacy: 1, uses: ['dev', 'learn'], custom: 2, docs: 1 },
-  alpine: { gaming: 0, old: 2, nvidia: 0, look: 'custom', release: 'fixed', systemd: false, nonfree: 0, privacy: 1, uses: ['server'], custom: 2, docs: 1 },
-  crux: { gaming: 0, old: 1, nvidia: 0, look: 'custom', release: 'source', systemd: false, nonfree: 0, privacy: 1, uses: ['learn'], custom: 2, docs: 0 },
-  pclinuxos: { gaming: 1, old: 1, nvidia: 2, look: 'windows', release: 'rolling', systemd: false, nonfree: 2, privacy: 1, uses: ['desktop'], custom: 1, docs: 1 },
-  lfs: { gaming: 0, old: 1, nvidia: 0, look: 'custom', release: 'source', systemd: 'both', nonfree: 0, privacy: 1, uses: ['learn'], custom: 2, docs: 1 },
-};
+// os perfis ficam em cada distro da Wiki (campo `profile`): adicionar uma distro é editar um lugar só
+export type Traits = Profile;
+export const traits: Record<string, Traits> = Object.fromEntries(
+  // só distros de PC para o dia a dia (sem servidores, celulares, descontinuadas…): ver inQuiz em wiki.ts
+  wiki.filter(inQuiz).map((n) => [n.id, n.profile!]),
+);
 
 export interface Candidate { node: WikiNode; t: Traits }
 export const candidates: Candidate[] = wiki.filter((n) => traits[n.id]).map((n) => ({ node: n, t: traits[n.id] }));

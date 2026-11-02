@@ -183,6 +183,34 @@ a:hover { text-decoration: underline; }
 .btn-primary { background: var(--accent); color: #fff; }
 .btn-primary:hover { box-shadow: 0 8px 30px color-mix(in srgb, var(--accent) 50%, transparent); }
 .btn-link { background: none; color: var(--accent); padding-inline: 8px; }
+/* contorno, como o segundo botão dos painéis da apple.com */
+.btn-outline { background: none; color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.btn-outline:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+
+/* ilustrações que flutuam e seguem levemente o mouse (motion.ts aplica --px/--py) */
+[data-float] {
+  transform: translate3d(calc(var(--px, 0) * 1px), calc(var(--py, 0) * 1px), 0);
+  transition: transform 0.6s var(--ease);
+}
+.float-bob { animation: bob-y 6s ease-in-out infinite; }
+@keyframes bob-y { 50% { translate: 0 -10px; } }
+
+/* listas de cards que, no celular, viram carrossel de lado dentro da tela (como no Instagram) */
+@media (max-width: 760px) {
+  .carousel {
+    display: flex !important;
+    gap: 12px;
+    margin-inline: -22px;
+    padding: 4px 22px 14px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+    text-align: left;
+  }
+  .carousel::-webkit-scrollbar { display: none; }
+  .carousel > * { flex: 0 0 82%; scroll-snap-align: center; }
+}
 
 /* ---------- Sections ---------- */
 section { position: relative; }
@@ -191,7 +219,87 @@ section { position: relative; }
 
 /* reveal inicial (o JS anima) */
 [data-reveal] { opacity: 0; transform: translateY(40px); }
-.no-js [data-reveal], .reduced [data-reveal] { opacity: 1; transform: none; }
+.no-js [data-reveal], .reduced [data-reveal], .reduced.feed [data-screen] [data-reveal] { opacity: 1; transform: none; }
+
+/* ---------- Feed (celular): uma tela por vez, como stories ----------
+   Quem rola é o <main>, não a página: assim a barra do navegador (Safari/Chrome) não encolhe
+   no meio da rolagem e cada tela tem sempre a altura exata do que está visível. */
+.feed-dots, .feed-hint { display: none; }
+@media (max-width: 760px) {
+  html.feed { --feed-h: 100dvh; }
+  html.feed, html.feed body { height: 100%; overflow: hidden; }
+  html.feed main {
+    height: var(--feed-h);
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    scroll-snap-type: y mandatory;
+    scrollbar-width: none;
+  }
+  html.feed main::-webkit-scrollbar { display: none; }
+  html.feed [data-screen] {
+    min-height: var(--feed-h);
+    scroll-snap-align: start;
+    scroll-snap-stop: always; /* um gesto = uma tela, mesmo com dedada forte */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-block: calc(64px + env(safe-area-inset-top, 0px)) calc(36px + env(safe-area-inset-bottom, 0px));
+  }
+  /* seção que só agrupa telas (cada filho [data-screen] é uma tela) */
+  html.feed .feed-group { padding-block: 0; }
+  html.feed main > footer { scroll-snap-align: end; }
+
+  /* o conteúdo de cada tela sobe quando ela entra (o JS marca .on e numera --i) */
+  html.feed [data-screen] [data-reveal] {
+    transition: opacity 0.7s var(--ease), transform 0.9s var(--ease);
+    transition-delay: calc(var(--i, 0) * 80ms);
+  }
+  html.feed [data-screen].on [data-reveal] { opacity: 1; transform: none; }
+
+  /* progresso: um pontinho por tela */
+  html.feed .feed-dots {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    position: fixed;
+    right: 7px;
+    top: 50%;
+    z-index: 50;
+    transform: translateY(-50%);
+    color: var(--text-2);
+    pointer-events: none;
+  }
+  .feed-dots i {
+    width: 5px;
+    height: 5px;
+    border-radius: 3px;
+    background: currentColor;
+    opacity: 0.35;
+    transition: height 0.4s var(--ease), opacity 0.3s, color 0.3s;
+  }
+  .feed-dots i.on { height: 18px; opacity: 1; color: var(--accent); }
+
+  /* "deslize para cima", só na primeira tela até a pessoa rolar */
+  html.feed .feed-hint {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    position: fixed;
+    left: 50%;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    z-index: 50;
+    transform: translateX(-50%);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-2);
+    pointer-events: none;
+    transition: opacity 0.4s;
+  }
+  .feed-hint svg { animation: hint 1.6s var(--ease) infinite; }
+  .feed-hint.gone { opacity: 0; }
+  @keyframes hint { 0%, 100% { transform: translateY(4px); opacity: 0.5; } 50% { transform: translateY(-4px); opacity: 1; } }
+}
 
 /* ---------- Theme transition ---------- */
 ::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }

@@ -1,0 +1,343 @@
+---
+// Capítulo da página inicial: a comparação bem-humorada entre Windows e Linux (antes uma página própria).
+import { type Lang, tr, deepTr } from '../i18n';
+
+const { lang } = Astro.props as { lang: Lang };
+const t = (s: string) => tr(lang, s);
+
+// ícones de "aplicativos de brinde" desenhados em vetor: doce, jogo, música, vídeo e dois antivírus
+const APPS = [
+  { c: ['#ff5f9e', '#ff9a3c'], d: 'M12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12Zm-9 6 3-3v6Zm18 0-3 3V9Z' },
+  { c: ['#34c759', '#0a8f3c'], d: 'M7 9h10a4 4 0 0 1 0 8l-2-2H9l-2 2a4 4 0 0 1 0-8Zm1 2v1.5H6.5v1H8V15h1v-1.5h1.5v-1H9V11Zm7.5.5a1 1 0 1 0 0 2 1 1 0 0 0 0-2Z' },
+  { c: ['#ff375f', '#bf1e5c'], d: 'M16 5v9.5a2.5 2.5 0 1 1-1.5-2.3V8.2L10 9.4v6.1a2.5 2.5 0 1 1-1.5-2.3V7.2Z' },
+  { c: ['#5e5ce6', '#2f2ab8'], d: 'M5 7h14v10H5Zm4 2.5v5l4.5-2.5Z' },
+  { c: ['#0a84ff', '#0047b3'], d: 'M12 4 5 7v5c0 4 3 6.5 7 8 4-1.5 7-4 7-8V7Z' },
+  { c: ['#64d2ff', '#0a84ff'], d: 'M12 4 5 7v5c0 4 3 6.5 7 8 4-1.5 7-4 7-8V7Zm-1 11-3-3 1.4-1.4 1.6 1.6 4-4L16.4 9.6Z' },
+];
+
+const tiles = deepTr(lang, [
+  {
+    cls: 'tile-bsod span-2',
+    eyebrow: 'Estabilidade',
+    title: 'Seu PC encontrou um problema.',
+    text: 'E reiniciará em instantes. Coletando informações do erro: 0%. Pode ir fazer um café. E plantar o café.',
+    art: 'bsod',
+  },
+  {
+    cls: 'tile-candy',
+    eyebrow: 'Bloatware',
+    title: 'Instalação limpa*.',
+    text: '*Acompanha Candy Crush, TikTok, Xbox, Clipchamp e um antivírus que pergunta se você quer mais antivírus.',
+    art: 'candy',
+  },
+  {
+    cls: 'tile-account',
+    eyebrow: 'Privacidade',
+    title: 'Pra usar seu PC, faça login no PC deles.',
+    text: 'No Linux, a conta é sua. O usuário é seu. A senha é sua. Que conceito revolucionário.',
+    art: 'account',
+  },
+  {
+    cls: 'tile-activate span-2',
+    eyebrow: 'Personalização',
+    title: 'Quer trocar o papel de parede?',
+    text: 'Ative o Windows primeiro. No Linux você troca o papel de parede, a barra, os ícones, a interface inteira e, se der vontade, o sistema todo.',
+    art: 'activate',
+  },
+]);
+
+---
+
+  <!-- ================= UPDATES (pinned) ================= -->
+  <section id="updates" class="updates invert" data-screen>
+    <div class="updates-sticky">
+      <div class="container">
+        <header class="updates-head">
+          <p class="eyebrow">{t('E o Windows?')}</p>
+          <h2 class="title">{t('Na hora que')} <span class="gradient-text">{t('você')}</span> {t('quiser.')}</h2>
+        </header>
+        <div class="updates-grid">
+          <div class="screen win-screen">
+            <div class="spinner" aria-hidden="true">
+              {Array.from({ length: 5 }).map((_, i) => <i style={`--i:${i}`}></i>)}
+            </div>
+            <p class="win-msg">{t('Trabalhando nas atualizações')} <span id="win-pct">0</span>%</p>
+            <p class="win-sub">{t('Não desligue o computador.')}<br />{t('Sim, você tinha uma apresentação agora.')}</p>
+            <p class="win-tag">Windows</p>
+          </div>
+
+          <div class="screen term glass">
+            <div class="term-bar"><i></i><i></i><i></i><span>terminal</span></div>
+            <pre class="term-body"><code id="term"></code><span class="caret"></span></pre>
+            <p class="term-tag">Linux</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= BENTO ================= -->
+  <section id="diferencas" class="section section-alt" data-screen>
+    <div class="container">
+      <div class="diff-head">
+        <p class="eyebrow" data-reveal>{t('Diferenças')}</p>
+        <h2 class="title" data-reveal>{t('Pequenos detalhes.')}<br />{t('Grandes irritações.')}</h2>
+      </div>
+
+      <div class="bento carousel">
+        {tiles.map((tile) => (
+          <div class={`tile-slot ${tile.cls}`}>
+          <article class="tile glass" data-reveal data-tilt>
+            <div class="tile-art" aria-hidden="true">
+              {tile.art === 'bsod' && <div class="bsod"><span class="sad">:(</span><span class="qr"></span></div>}
+              {tile.art === 'candy' && (
+                <div class="candy">
+                  {APPS.map((a, i) => (
+                    <span style={`--i:${i};--c1:${a.c[0]};--c2:${a.c[1]}`}><svg viewBox="0 0 24 24"><path d={a.d} /></svg></span>
+                  ))}
+                </div>
+              )}
+              {tile.art === 'account' && (
+                <div class="login">
+                  <span class="avatar"></span>
+                  <span class="field">{t('Entre com sua conta…')}</span>
+                  <span class="field short">{t('Senha')}</span>
+                </div>
+              )}
+              {tile.art === 'activate' && (
+                <div class="activate">
+                  <span class="wall"></span>
+                  <span class="mark">{t('Ativar o Windows')}<small>{t('Acesse Configurações para ativar o Windows.')}</small></span>
+                </div>
+              )}
+            </div>
+            <div class="tile-copy">
+              <p class="tile-eyebrow">{tile.eyebrow}</p>
+              <h3>{tile.title}</h3>
+              <p>{tile.text}</p>
+            </div>
+          </article>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+
+<style>
+  /* ---------- UPDATES ---------- */
+  .updates { height: 320vh; }
+  .updates-sticky {
+    position: sticky;
+    top: 0;
+    min-height: 100svh;
+    display: grid;
+    align-items: center;
+    padding-block: 100px 40px;
+    text-align: center;
+  }
+  .updates-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 32px;
+  }
+  .screen {
+    position: relative;
+    border-radius: var(--radius);
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    text-align: left;
+  }
+  .win-screen {
+    background: #0063b1;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 24px;
+    box-shadow: var(--shadow);
+  }
+  .win-msg { font-size: clamp(16px, 2vw, 22px); margin: 28px 0 8px; font-weight: 300; }
+  .win-sub { font-size: 13px; opacity: 0.8; margin: 0; font-weight: 300; }
+  .spinner { position: relative; width: 48px; height: 48px; }
+  .spinner i {
+    position: absolute;
+    inset: 0;
+    animation: orbit 4.5s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+    animation-delay: calc(var(--i) * 0.12s);
+  }
+  .spinner i::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #fff;
+  }
+  @keyframes orbit {
+    0% { transform: rotate(0); opacity: 1; }
+    70% { transform: rotate(720deg); opacity: 1; }
+    71%, 100% { transform: rotate(720deg); opacity: 0; }
+  }
+  .win-tag, .term-tag {
+    position: absolute;
+    bottom: 14px;
+    left: 18px;
+    margin: 0;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.7;
+  }
+  .term { display: flex; flex-direction: column; }
+  .term-bar { display: flex; align-items: center; gap: 7px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .term-bar i { width: 12px; height: 12px; border-radius: 50%; background: #ff5f57; }
+  .term-bar i:nth-child(2) { background: #febc2e; }
+  .term-bar i:nth-child(3) { background: #28c840; }
+  .term-bar span { margin-left: auto; margin-right: auto; font-size: 12px; color: var(--text-2); transform: translateX(-20px); }
+  .term-body {
+    flex: 1;
+    margin: 0;
+    padding: 18px 20px;
+    font: 13px/1.6 ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+    letter-spacing: 0;
+    white-space: pre-wrap;
+    color: var(--text);
+    overflow: hidden;
+  }
+  .term-body :global(.ok) { color: #28c840; }
+  .term-body :global(.dim) { color: var(--text-2); }
+  .term-body :global(.prompt) { color: var(--accent); }
+  .caret { display: inline-block; width: 8px; height: 1.1em; background: var(--text); vertical-align: text-bottom; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  @media (max-width: 760px) {
+    .updates-grid { grid-template-columns: 1fr; }
+    .screen { aspect-ratio: 16 / 10; }
+    .term { aspect-ratio: auto; min-height: 260px; }
+    .term-body { padding-bottom: 40px; font-size: 12px; }
+    .updates { height: auto; }
+    .updates-sticky { position: relative; }
+  }
+
+  /* ---------- BENTO ---------- */
+  .bento {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-top: 56px;
+    text-align: left;
+  }
+  .span-2 { grid-column: span 2; }
+  .tile {
+    border-radius: var(--radius);
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow: hidden;
+    min-height: 380px;
+    transition: transform 0.5s var(--ease);
+  }
+  .tile-art { flex: 1; display: grid; place-items: center; min-height: 160px; }
+  .tile-eyebrow { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.06em; }
+  .tile h3 { margin: 0 0 8px; font-size: 26px; line-height: 1.15; letter-spacing: -0.03em; }
+  .tile-copy p:last-child { margin: 0; color: var(--text-2); font-size: 16px; }
+
+  .bsod {
+    width: 100%;
+    max-width: 420px;
+    aspect-ratio: 16 / 7;
+    background: #0078d7;
+    border-radius: 16px;
+    padding: 20px 28px;
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .sad { font-size: 72px; font-weight: 200; animation: shake 4s infinite; }
+  @keyframes shake { 0%, 90%, 100% { transform: none; } 92% { transform: translateX(-4px); } 94% { transform: translateX(4px); } 96% { transform: translateX(-2px); } }
+  .qr {
+    width: 64px;
+    height: 64px;
+    background:
+      conic-gradient(#fff 25%, transparent 0 50%, #fff 0 75%, transparent 0) 0 0 / 16px 16px;
+    border: 4px solid #fff;
+  }
+
+  .candy { display: grid; grid-template-columns: repeat(3, 56px); gap: 12px; }
+  .candy span {
+    width: 56px;
+    height: 56px;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    background: linear-gradient(145deg, var(--c1), var(--c2));
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    animation: pop 3s var(--ease) infinite;
+    animation-delay: calc(var(--i) * 0.15s);
+  }
+  .candy svg { width: 30px; height: 30px; fill: #fff; }
+  @keyframes pop { 0%, 100% { transform: scale(1); } 10% { transform: scale(1.15) rotate(-5deg); } 20% { transform: scale(1); } }
+
+  .login { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; max-width: 220px; }
+  .avatar { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #3a8dff, #a855f7); margin-bottom: 6px; }
+  .field { width: 100%; padding: 10px 12px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); font-size: 12px; color: var(--text-2); }
+  .field.short::after { content: ' ••••••'; }
+
+  .activate { position: relative; width: 100%; max-width: 520px; aspect-ratio: 16 / 7; border-radius: 16px; overflow: hidden; }
+  .wall { position: absolute; inset: 0; background: linear-gradient(120deg, #0f2027, #2c5364, #a855f7, #f5a623); background-size: 300% 300%; animation: pan 10s ease infinite; }
+  @keyframes pan { 50% { background-position: 100% 50%; } }
+  .mark { position: absolute; right: 18px; bottom: 14px; color: rgba(255, 255, 255, 0.6); font-size: 18px; text-align: left; line-height: 1.2; }
+  .mark small { display: block; font-size: 11px; }
+
+  @media (max-width: 860px) {
+    .bento { grid-template-columns: 1fr; }
+    .span-2 { grid-column: auto; }
+  }
+
+  /* ---------- Celular: duas telas do feed (atualizações; diferenças com os cards em carrossel) ---------- */
+  .tile-slot { display: grid; }
+  @media (max-width: 760px) {
+    .updates-sticky { min-height: 0; padding: 0; display: block; }
+    .updates-head .title { margin-bottom: 0; }
+    .updates-grid { gap: 12px; margin-top: 18px; }
+    .win-screen { padding: 16px; }
+    .win-msg { margin: 18px 0 4px; }
+    .term { min-height: 0; }
+    .term-bar { padding: 10px 14px; }
+    .term-body { padding: 12px 16px 36px; font-size: 11.5px; line-height: 1.5; }
+  
+    .diff-head .title { font-size: 30px; margin-bottom: 0; }
+    .bento { margin-top: 18px; }
+    .tile { min-height: 0; padding: 20px; gap: 14px; }
+    .tile-art { min-height: 120px; }
+    .tile h3 { font-size: 21px; }
+    .tile-copy p:last-child { font-size: 14px; }
+  }
+  /* celulares baixinhos (iPhone SE): aperta mais pra tela caber inteira */
+  @media (max-width: 760px) and (max-height: 720px) {
+    .updates-head .eyebrow { display: none; }
+    .updates-head .title { font-size: 30px; }
+    .screen { aspect-ratio: 2 / 1; }
+    .term { aspect-ratio: auto; }
+    .term-body { font-size: 10.5px; }
+    .win-sub, .win-tag { display: none; }
+    .win-msg { font-size: 15px; margin-top: 12px; }
+    .spinner { transform: scale(0.8); }
+    .diff-head .eyebrow { display: none; }
+    .tile-art { min-height: 90px; transform: scale(0.8); }
+  }
+  /* iPhone SE: o desenho dos cards é decorativo; o texto da piada fica */
+  @media (max-width: 760px) and (max-height: 600px) {
+    .tile-art { display: none; }
+    .diff-head .title { font-size: 26px; }
+  }
+</style>

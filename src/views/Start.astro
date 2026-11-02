@@ -1,0 +1,439 @@
+---
+// Página inicial "O que é o Linux?": painéis curtos no estilo da apple.com (título, frase, dois botões e uma
+// ilustração em vetor). Nos marcos de conhecimento (abertura, motivos, distros e fim) há dois botões: "Continuar"
+// desce a página; o outro pula para as páginas seguintes, para quem já sabe.
+// No celular, cada painel é uma tela do feed.
+import Base from '../layouts/Base.astro';
+import Versus from '../components/Versus.astro';
+import { type Lang, tr, deepTr, localePath } from '../i18n';
+import { logos } from '../data/logos';
+import { siLinux } from 'simple-icons';
+
+const { lang } = Astro.props as { lang: Lang };
+const t = (s: string) => tr(lang, s);
+const L = (href: string) => localePath(lang, href);
+
+const perks = deepTr(lang, [
+  { art: 'price', title: 'De graça. Pra sempre.', text: 'Sem licença e sem assinatura.' },
+  { art: 'old', title: 'Revive PC antigo.', text: 'Roda bem onde o Windows 11 nem instala.' },
+  { art: 'mouse', title: 'Sem tela preta.', text: 'Tudo pelo mouse, como no Windows.' },
+  { art: 'games', title: 'Roda jogos.', text: 'Milhares de jogos da Steam funcionam.' },
+]);
+
+const steps = deepTr(lang, [
+  { icon: 'quiz', title: 'Escolha uma distro', text: 'O Teste de Afinidade indica a sua.' },
+  { icon: 'usb', title: 'Grave num pendrive', text: 'Com o balenaEtcher ou o Ventoy.' },
+  { icon: 'play', title: 'Teste sem instalar', text: 'Roda direto do pendrive, sem mexer no seu sistema.' },
+]);
+
+const distroIds = ['ubuntu', 'mint', 'fedora', 'debian', 'arch', 'popos'];
+const names: Record<string, string> = { ubuntu: 'Ubuntu', mint: 'Linux Mint', fedora: 'Fedora', debian: 'Debian', arch: 'Arch', popos: 'Pop!_OS' };
+const logoMarkup = (id: string) => {
+  const l = logos[id];
+  if (l?.path) return `<svg viewBox="0 0 24 24" aria-hidden="true"${l.color ? ` style="color:${l.color}"` : ''}><path d="${l.path}"/></svg>`;
+  if (l?.src) return `<img src="${l.src}" alt="" loading="lazy" />`;
+  return '';
+};
+
+// ícones dos passos, em vetor
+const STEP_ICONS: Record<string, string> = {
+  quiz: 'M9 4h6v2h3v14H6V6h3Zm1 2v1h4V6Zm-1 5v2h2v-2Zm4 0v2h4v-2Zm-4 4v2h2v-2Zm4 0v2h4v-2Z',
+  usb: 'M9 2h6v6h2v12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V8h2Zm1 2v4h1V4Zm3 0v4h1V4Z',
+  play: 'M3 5h18v11H3Zm7 2.5v6l5-3ZM8 18h8v2H8Z',
+};
+---
+
+<Base title={`${t('O que é o Linux?')} · distrolinux`} lang={lang} feed description={t('O que é um sistema operacional, o que é o Linux e por onde começar. Um guia para quem nunca usou Linux.')}>
+  <!-- 1. O que é o Linux? -->
+  <section id="inicio" class="panel p-hero" data-screen>
+    <div class="glow" aria-hidden="true"><span></span><span></span></div>
+    <div class="container">
+      <h1 class="p-title" data-reveal>{t('O que é o')} <span class="gradient-text">{t('Linux?')}</span></h1>
+      <p class="p-sub" data-reveal>{t('Um sistema operacional gratuito. Como o Windows ou o macOS, só que livre.')}</p>
+      <div class="p-cta" data-reveal>
+        <a class="btn btn-primary" href="#sistema">{t('Continuar')}</a>
+        <a class="btn btn-outline" href={L('/distros')}>{t('Já sei. Ver as distros ›')}</a>
+      </div>
+      <div class="p-art" data-reveal aria-hidden="true">
+        <div class="laptop float-bob" data-float="18">
+          <div class="lid"><div class="display">
+            <div class="desk linux">
+              <div class="topbar"><i></i><b>9:41</b><i></i></div>
+              <div class="window"><div class="wbar"><i></i><i></i><i></i></div><div class="wbody"><span></span><span></span><span></span><span></span></div></div>
+              <div class="window w2"><div class="wbar"><i></i><i></i><i></i></div><div class="wbody"><span></span><span></span></div></div>
+              <div class="dock"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            </div>
+          </div></div>
+          <div class="base"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Sistema operacional? -->
+  <section id="sistema" class="panel invert" data-screen>
+    <div class="container">
+      <h2 class="p-title" data-reveal>{t('Sistema operacional?')}</h2>
+      <p class="p-sub" data-reveal>{t('É o programa que faz o computador funcionar. Sem ele, nada abre.')}</p>
+      <div class="p-art stack-art" data-reveal>
+        <div class="stack3d" data-float="14" aria-hidden="true">
+          <div class="slabs">
+            <div class="slab hw"></div>
+            <div class="slab os"><b>OS</b></div>
+            <div class="slab apps"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          </div>
+        </div>
+        <ul class="legend">
+          <li class="l-apps"><strong>{t('Seus aplicativos')}</strong></li>
+          <li class="l-os"><strong>{t('Sistema operacional')}</strong><small>{t('Liga os apps às peças')}</small></li>
+          <li class="l-hw"><strong>{t('Peças do computador')}</strong></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Troque o Windows. Ou o Mac. -->
+  <section id="trocar" class="panel section-alt" data-screen>
+    <div class="container">
+      <h2 class="p-title" data-reveal>{t('Troque o Windows.')} <span class="gradient-text">{t('Ou o Mac.')}</span></h2>
+      <p class="p-sub" data-reveal>{t('O Linux instala no mesmo computador, no lugar do sistema atual ou ao lado dele.')}</p>
+      <div class="p-art" data-reveal aria-hidden="true">
+        <div class="laptop swap" data-float="18">
+          <div class="lid"><div class="display">
+            <div class="desk windows">
+              <div class="bloom"></div>
+              <div class="watermark">{t('Ativar o Windows')}</div>
+              <div class="taskbar"><span class="start"><i></i><i></i><i></i><i></i></span><i></i><i></i><i></i></div>
+            </div>
+            <div class="desk linux">
+              <div class="topbar"><i></i><b>9:41</b><i></i></div>
+              <div class="window"><div class="wbar"><i></i><i></i><i></i></div><div class="wbody"><span></span><span></span><span></span><span></span></div></div>
+              <div class="dock"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            </div>
+          </div></div>
+          <div class="base"></div>
+        </div>
+      </div>
+      <p class="p-note" data-reveal>{t('Dá para testar pelo pendrive antes, sem apagar nada.')}</p>
+    </div>
+  </section>
+
+  <!-- 4. Por que Linux? (grade de cards, como a da apple.com) -->
+  <section id="vantagens" class="panel" data-screen>
+    <div class="container">
+      <h2 class="p-title" data-reveal>{t('Por que Linux?')}</h2>
+      <div class="perks" data-reveal>
+        {perks.map((p) => (
+          <article class={`perk perk-${p.art}`}>
+            <div class="perk-art" aria-hidden="true">
+              {p.art === 'price' && <div class="tag"><span>{lang === 'en' ? '$0' : 'R$ 0'}</span></div>}
+              {p.art === 'old' && (
+                <div class="laptop mini old"><div class="lid"><div class="display"><div class="desk linux"><div class="dock"><i></i><i></i><i></i><i></i></div></div></div></div><div class="base"></div><span class="speed"><i></i><i></i><i></i></span></div>
+              )}
+              {p.art === 'mouse' && (
+                <div class="settings">
+                  <span class="row"><i></i><b class="sw on"></b></span>
+                  <span class="row"><i></i><b class="sw"></b></span>
+                  <span class="row"><i></i><b class="sw on"></b></span>
+                  <svg class="cursor" viewBox="0 0 24 24"><path d="M5 3l14 8-6 1.5L10 19Z" /></svg>
+                </div>
+              )}
+              {p.art === 'games' && (
+                <svg class="pad" viewBox="0 0 120 70"><defs><linearGradient id="padg" x1="0" x2="1"><stop offset="0" stop-color="#a855f7" /><stop offset="1" stop-color="#2997ff" /></linearGradient></defs><path fill="url(#padg)" d="M30 8h60c14 0 22 10 26 26 4 18 2 30-8 30-8 0-12-6-18-14H30c-6 8-10 14-18 14-10 0-12-12-8-30C8 18 16 8 30 8Z" /><path fill="#fff" d="M26 26h6v6h6v6h-6v6h-6v-6h-6v-6h6Z" /><circle fill="#fff" cx="86" cy="28" r="4" /><circle fill="#fff" cx="96" cy="37" r="4" /><circle fill="#fff" cx="76" cy="37" r="4" /><circle fill="#fff" cx="86" cy="46" r="4" /></svg>
+              )}
+            </div>
+            <h3>{p.title}</h3>
+            <p>{p.text}</p>
+          </article>
+        ))}
+      </div>
+      <div class="p-cta" data-reveal>
+        <a class="btn btn-primary" href="#tudo">{t('Continuar')}</a>
+        <a class="btn btn-outline" href={L('/quiz')}>{t('Descobrir minha distro ›')}</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. Está em tudo que tem tela -->
+  <section id="tudo" class="panel invert" data-screen>
+    <div class="container">
+      <h2 class="p-title" data-reveal>{t('Está em tudo que tem tela.')}</h2>
+      <p class="p-sub" data-reveal>{t('Celulares Android, smart TVs, carros, roteadores e os 500 supercomputadores mais rápidos do mundo.')}</p>
+      <div class="p-art" data-reveal aria-hidden="true">
+        <svg class="devices" viewBox="0 0 640 200" data-float="12">
+          <defs>
+            <linearGradient id="scr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2997ff" /><stop offset=".55" stop-color="#a855f7" /><stop offset="1" stop-color="#f5a623" /></linearGradient>
+          </defs>
+          <g class="dev" style="--d:0"><rect x="10" y="40" width="90" height="140" rx="10" /><rect class="fill" x="22" y="56" width="66" height="22" rx="4" /><rect class="fill" x="22" y="88" width="66" height="22" rx="4" /><rect class="fill" x="22" y="120" width="66" height="22" rx="4" /><circle cx="80" cy="160" r="4" /></g>
+          <g class="dev" style="--d:1"><rect x="130" y="30" width="200" height="120" rx="10" /><rect class="fill" x="142" y="42" width="176" height="96" rx="4" /><path d="M200 150l-12 30h84l-12-30" /></g>
+          <g class="dev" style="--d:2"><rect x="360" y="40" width="74" height="140" rx="16" /><rect class="fill" x="368" y="52" width="58" height="112" rx="8" /><rect x="388" y="170" width="18" height="3" rx="1.5" /></g>
+          <g class="dev" style="--d:3"><path d="M472 60v-26h36v26M472 140v26h36v-26" /><rect x="458" y="60" width="64" height="80" rx="18" /><rect class="fill" x="466" y="68" width="48" height="64" rx="12" /></g>
+          <g class="dev" style="--d:4"><circle cx="590" cy="110" r="44" /><circle cx="590" cy="110" r="12" /><path d="M550 96h28M602 96h28M590 122v32" /><rect class="fill" x="560" y="30" width="60" height="30" rx="6" /></g>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Distros -->
+  <section id="distros" class="panel section-alt" data-screen>
+    <div class="container">
+      <h2 class="p-title" data-reveal>{t('Linux vem em sabores: as')} <span class="gradient-text">{t('distros.')}</span></h2>
+      <p class="p-sub" data-reveal>{t('Todas usam o mesmo núcleo, cada uma com seu visual e seu jeito.')}</p>
+      <div class="p-cta" data-reveal>
+        <a class="btn btn-primary" href="#updates">{t('Continuar')}</a>
+        <a class="btn btn-outline" href={L('/distros')}>{t('Distros para iniciantes ›')}</a>
+      </div>
+      <div class="p-art" data-reveal aria-hidden="true">
+        <div class="orbit" data-float="16">
+          <div class="core"><svg viewBox="0 0 24 24"><path d={siLinux.path} /></svg><b>Linux</b></div>
+          {distroIds.map((id, i) => (
+            <span class="sat glass" style={`--a:${(360 / distroIds.length) * i}deg`}>
+              <Fragment set:html={logoMarkup(id)} />
+              <em>{names[id]}</em>
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. E o Windows? (comparação bem-humorada: atualizações + diferenças) -->
+  <Versus lang={lang} />
+
+  <!-- 8. Comece em 3 passos -->
+  <section id="comecar" class="panel" data-screen>
+    <div class="container">
+      <h2 class="p-title" data-reveal>{t('Comece em 3 passos.')}</h2>
+      <ol class="steps" data-reveal>
+        {steps.map((s, i) => (
+          <li class="step">
+            <span class="step-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d={STEP_ICONS[s.icon]} /></svg><b>{i + 1}</b></span>
+            <h3>{s.title}</h3>
+            <p>{s.text}</p>
+          </li>
+        ))}
+      </ol>
+      <div class="p-cta" data-reveal>
+        <a class="btn btn-primary" href={L('/quiz')}>{t('Fazer o Teste de Afinidade')}</a>
+        <a class="btn btn-outline" href={L('/distros')}>{t('Ver o Guia Inicial ›')}</a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  /* ---------- Painel (título, frase, botões, ilustração) ---------- */
+  .panel { text-align: center; padding-block: 120px 90px; overflow: hidden; }
+  .p-title { margin: 0; font-size: clamp(40px, 6vw, 72px); line-height: 1.05; font-weight: 700; letter-spacing: -0.045em; }
+  .p-sub { margin: 14px auto 0; max-width: 640px; font-size: clamp(19px, 2.3vw, 26px); line-height: 1.3; font-weight: 500; }
+  .p-note { margin: 24px 0 0; font-size: 15px; color: var(--text-2); }
+  .p-cta, :global(#diferencas .p-cta) { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin-top: 26px; }
+  .p-art { margin-top: 56px; display: flex; justify-content: center; }
+
+  .p-hero { position: relative; padding-top: 140px; }
+  .p-hero .container { position: relative; z-index: 1; }
+  .glow { position: absolute; inset: 0; filter: blur(80px); opacity: 0.45; pointer-events: none; }
+  .glow span { position: absolute; width: 40vmax; height: 40vmax; border-radius: 50%; animation: drift 22s ease-in-out infinite alternate; }
+  .glow span:nth-child(1) { background: #2997ff; top: -15%; left: -10%; }
+  .glow span:nth-child(2) { background: #a855f7; bottom: -25%; right: -10%; animation-delay: -8s; }
+  :global([data-theme='dark']) .glow { opacity: 0.3; }
+  @keyframes drift { to { transform: translate(6vw, 5vh) scale(1.1); } }
+
+  /* ---------- Notebook em vetor (CSS) ---------- */
+  .laptop { --w: min(620px, 84vw); width: var(--w); position: relative; }
+  .lid {
+    aspect-ratio: 16 / 10;
+    padding: 2.2%;
+    border-radius: calc(var(--w) * 0.03) calc(var(--w) * 0.03) 6px 6px;
+    background: #1d1d1f;
+    box-shadow: 0 0 0 1.5px #3a3a3c inset, 0 40px 80px -30px rgba(0, 0, 0, 0.55);
+  }
+  .display { position: relative; width: 100%; height: 100%; border-radius: 6px; overflow: hidden; background: #000; }
+  .base {
+    position: relative;
+    width: 114%;
+    margin-left: -7%;
+    height: calc(var(--w) * 0.035);
+    border-radius: 2px 2px calc(var(--w) * 0.03) calc(var(--w) * 0.03);
+    background: linear-gradient(#e3e3e8, #a9a9ae 70%, #8e8e93);
+  }
+  .base::before { content: ''; position: absolute; left: 42%; right: 42%; top: 0; height: 40%; border-radius: 0 0 8px 8px; background: #b5b5ba; }
+  :global([data-theme='dark']) .base { background: linear-gradient(#7c7c80, #4a4a4e 70%, #3a3a3c); }
+
+  /* área de trabalho Linux */
+  .desk { position: absolute; inset: 0; }
+  .desk.linux { background: radial-gradient(circle at 20% 15%, #6d5dfc 0, transparent 45%), radial-gradient(circle at 85% 80%, #f5a623 0, transparent 40%), linear-gradient(135deg, #1e3a8a, #7c3aed 55%, #db2777); }
+  .topbar { position: absolute; inset: 0 0 auto; height: 6%; display: flex; align-items: center; justify-content: space-between; padding: 0 2%; background: rgba(0, 0, 0, 0.35); color: #fff; font-size: calc(var(--w) * 0.018); font-weight: 600; }
+  .topbar i { width: 8%; height: 40%; border-radius: 4px; background: rgba(255, 255, 255, 0.35); }
+  .window { position: absolute; left: 10%; top: 15%; width: 54%; height: 58%; border-radius: 8px; background: rgba(250, 250, 252, 0.94); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35); overflow: hidden; }
+  .window.w2 { left: 52%; top: 30%; width: 38%; height: 40%; background: rgba(30, 30, 34, 0.92); }
+  .wbar { display: flex; gap: 4%; padding: 3%; }
+  .wbar i { width: 5%; aspect-ratio: 1; border-radius: 50%; background: #ff5f57; }
+  .wbar i:nth-child(2) { background: #febc2e; }
+  .wbar i:nth-child(3) { background: #28c840; }
+  .wbody { display: grid; gap: 8%; padding: 4% 8%; }
+  .wbody span { height: calc(var(--w) * 0.012); border-radius: 4px; background: #d6d6dc; }
+  .wbody span:nth-child(1) { width: 60%; background: #7c3aed; opacity: 0.6; }
+  .wbody span:nth-child(3) { width: 80%; }
+  .w2 .wbody span { background: #48484c; }
+  .w2 .wbody span:nth-child(1) { background: #28c840; opacity: 0.8; }
+  .dock { position: absolute; left: 50%; bottom: 3%; transform: translateX(-50%); display: flex; gap: calc(var(--w) * 0.01); padding: calc(var(--w) * 0.008); border-radius: calc(var(--w) * 0.02); background: rgba(255, 255, 255, 0.25); }
+  .dock i { width: calc(var(--w) * 0.04); aspect-ratio: 1; border-radius: 28%; background: linear-gradient(135deg, #2997ff, #0a64d8); }
+  .dock i:nth-child(2) { background: linear-gradient(135deg, #ff9f0a, #ff375f); }
+  .dock i:nth-child(3) { background: linear-gradient(135deg, #30d158, #0a8f3c); }
+  .dock i:nth-child(4) { background: linear-gradient(135deg, #bf5af2, #5e5ce6); }
+  .dock i:nth-child(5) { background: linear-gradient(135deg, #ffd60a, #ff9f0a); }
+  .dock i:nth-child(6) { background: linear-gradient(135deg, #8e8e93, #3a3a3c); }
+
+  /* área de trabalho Windows (para a troca) */
+  .desk.windows { background: radial-gradient(ellipse at 50% 110%, #b9e2ff 0, #3a8dff 30%, #0a3fa8 60%, #041a4d); }
+  .bloom { position: absolute; left: 25%; right: 25%; top: 18%; height: 55%; border-radius: 50%; background: radial-gradient(#9fd6ff, transparent 70%); opacity: 0.7; }
+  .watermark { position: absolute; right: 3%; bottom: 12%; color: rgba(255, 255, 255, 0.55); font-size: calc(var(--w) * 0.02); }
+  .taskbar { position: absolute; inset: auto 0 0; height: 8%; display: flex; justify-content: center; align-items: center; gap: 1.5%; background: rgba(240, 244, 250, 0.78); }
+  .taskbar > i { width: 3%; height: 55%; border-radius: 4px; background: #8aa4c8; }
+  .start { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5px; width: 3%; height: 55%; }
+  .start i { background: #0a64d8; border-radius: 1px; }
+  /* a tela do Linux "varre" a do Windows, em loop */
+  .swap .desk.linux { animation: swap 7s ease-in-out infinite; }
+  @keyframes swap { 0%, 35% { clip-path: inset(0 100% 0 0); } 50%, 85% { clip-path: inset(0 0 0 0); } 100% { clip-path: inset(0 0 0 100%); } }
+
+  /* ---------- Camadas 3D (apps / sistema / peças), que respiram se afastando e se aproximando ---------- */
+  .stack-art { align-items: center; gap: 56px; flex-wrap: wrap; }
+  /* camadas isométricas em 2D (cada uma com a própria inclinação): funciona igual em todo navegador */
+  .stack3d { --s: 220px; position: relative; width: calc(var(--s) * 1.45); height: calc(var(--s) * 1.25); }
+  .slabs { position: absolute; inset: 0; }
+  .slab {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--s);
+    height: var(--s);
+    margin: calc(var(--s) / -2);
+    border-radius: 28px;
+    transform: translateY(var(--y)) rotateX(58deg) rotateZ(-42deg);
+  }
+  .slab.hw { --y: calc(var(--s) * 0.3); background: repeating-linear-gradient(90deg, #3a3a3c 0 2px, transparent 2px 22px), repeating-linear-gradient(0deg, #3a3a3c 0 2px, transparent 2px 22px), #1c1c1e; box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5); }
+  .slab.os { --y: 0px; display: grid; place-items: center; background: linear-gradient(135deg, #2997ff, #a855f7); box-shadow: 0 0 60px rgba(41, 151, 255, 0.55); animation: lift-os 5s ease-in-out infinite; }
+  .slab.os b { color: #fff; font-size: calc(var(--s) * 0.22); letter-spacing: -0.04em; opacity: 0.9; }
+  .slab.apps { --y: calc(var(--s) * -0.3); display: grid; grid-template-columns: repeat(3, 1fr); gap: 12%; padding: 14%; background: rgba(255, 255, 255, 0.92); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25); animation: lift-apps 5s ease-in-out infinite; }
+  .slab.apps i { border-radius: 26%; background: linear-gradient(135deg, #ff9f0a, #ff375f); }
+  .slab.apps i:nth-child(3n + 2) { background: linear-gradient(135deg, #30d158, #0a84ff); }
+  .slab.apps i:nth-child(3n) { background: linear-gradient(135deg, #bf5af2, #2997ff); }
+  /* as camadas respiram, se afastando e se aproximando */
+  @keyframes lift-os { 50% { translate: 0 calc(var(--s) * -0.04); } }
+  @keyframes lift-apps { 50% { translate: 0 calc(var(--s) * -0.1); } }
+  .legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 18px; text-align: left; }
+  .legend li { position: relative; padding-left: 26px; }
+  .legend li::before { content: ''; position: absolute; left: 0; top: 6px; width: 14px; height: 14px; border-radius: 4px; }
+  .l-apps::before { background: linear-gradient(135deg, #ff9f0a, #ff375f); }
+  .l-os::before { background: linear-gradient(135deg, #2997ff, #a855f7); }
+  .l-hw::before { background: #48484c; }
+  .legend strong { display: block; font-size: 19px; }
+  .legend small { display: block; font-size: 14px; color: var(--text-2); }
+
+  /* ---------- Vantagens: grade de cards ---------- */
+  .perks { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 40px; }
+  .perk { display: flex; flex-direction: column; align-items: center; min-width: 0; overflow: hidden; padding: 28px 20px 26px; border-radius: 26px; background: var(--bg-alt); }
+  .perk-art { height: 110px; display: grid; place-items: center; margin-bottom: 18px; }
+  .perk h3 { margin: 0; font-size: 21px; letter-spacing: -0.02em; }
+  .perk p { margin: 6px 0 0; font-size: 15px; color: var(--text-2); line-height: 1.4; }
+  .tag { position: relative; padding: 18px 26px 18px 40px; border-radius: 14px 40px 40px 14px; background: linear-gradient(135deg, #30d158, #0a8f3c); transform: rotate(-8deg); box-shadow: 0 14px 30px rgba(10, 143, 60, 0.35); }
+  .tag::before { content: ''; position: absolute; left: 14px; top: 50%; width: 12px; height: 12px; margin-top: -6px; border-radius: 50%; background: var(--bg-alt); }
+  .tag span { color: #fff; font-size: 34px; font-weight: 800; letter-spacing: -0.04em; white-space: nowrap; }
+  .laptop.mini { --w: 150px; }
+  .old .lid { background: #cdc3a5; box-shadow: 0 0 0 1.5px #a99e7f inset; padding: 6%; }
+  .old .base { background: linear-gradient(#ddd4b9, #b3a888); }
+  .speed { position: absolute; left: -34px; top: 22%; display: grid; gap: 7px; }
+  .speed i { display: block; height: 4px; border-radius: 2px; background: var(--accent); animation: zoom 1.4s ease-in-out infinite; }
+  .speed i:nth-child(1) { width: 26px; }
+  .speed i:nth-child(2) { width: 18px; margin-left: 8px; animation-delay: 0.2s; }
+  .speed i:nth-child(3) { width: 22px; margin-left: 4px; animation-delay: 0.4s; }
+  @keyframes zoom { 50% { transform: translateX(-8px); opacity: 0.4; } }
+  .settings { position: relative; display: grid; gap: 10px; padding: 16px 18px; width: 150px; border-radius: 16px; background: var(--surface); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); }
+  .row { display: flex; align-items: center; justify-content: space-between; }
+  .row i { width: 60px; height: 7px; border-radius: 4px; background: var(--line); }
+  .sw { position: relative; width: 30px; height: 18px; border-radius: 9px; background: var(--line); }
+  .sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); }
+  .sw.on { background: #34c759; }
+  .sw.on::after { left: 14px; }
+  .cursor { position: absolute; right: 12px; bottom: -14px; width: 26px; height: 26px; fill: var(--text); stroke: var(--surface); stroke-width: 1.5; animation: click 2.4s ease-in-out infinite; }
+  @keyframes click { 0%, 100% { transform: translate(8px, 10px); } 45%, 55% { transform: translate(-14px, -22px) scale(0.9); } }
+  .pad { width: 140px; filter: drop-shadow(0 14px 22px rgba(168, 85, 247, 0.35)); }
+
+  /* ---------- Aparelhos em linha, que acendem um depois do outro ---------- */
+  .devices { width: min(760px, 92vw); fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; color: var(--text); }
+  .devices .fill { fill: url(#scr); stroke: none; animation: glow-on 5s ease-in-out infinite; animation-delay: calc(var(--d) * 0.4s); }
+  @keyframes glow-on { 0%, 100% { opacity: 0.35; } 30%, 60% { opacity: 0.95; } }
+
+  /* ---------- Distros em órbita ---------- */
+  .orbit { --size: 360px; --r: 140px; --sat: 80px; --core: 130px; position: relative; width: var(--size); height: var(--size); }
+  .core { position: absolute; left: 50%; top: 50%; width: var(--core); height: var(--core); margin: calc(var(--core) / -2); border-radius: 50%; display: grid; place-content: center; justify-items: center; gap: 2px; background: radial-gradient(circle at 35% 30%, #ffd27a, var(--tux)); color: #2a1c00; box-shadow: 0 0 0 10px color-mix(in srgb, var(--tux) 18%, transparent), 0 20px 50px color-mix(in srgb, var(--tux) 35%, transparent); }
+  .core svg { width: calc(var(--core) * 0.34); height: calc(var(--core) * 0.34); fill: #2a1c00; }
+  .core b { font-size: calc(var(--core) * 0.13); }
+  .sat { position: absolute; left: 50%; top: 50%; width: var(--sat); height: var(--sat); margin: calc(var(--sat) / -2); border-radius: 50%; display: grid; place-content: center; justify-items: center; gap: 2px; transform: rotate(var(--a)) translateY(calc(-1 * var(--r))) rotate(calc(-1 * var(--a))); }
+  .sat :global(svg), .sat :global(img) { width: calc(var(--sat) * 0.36); height: calc(var(--sat) * 0.36); fill: currentColor; object-fit: contain; }
+  .sat em { font-style: normal; font-size: 10px; font-weight: 600; color: var(--text-2); white-space: nowrap; }
+  .orbit::before { content: ''; position: absolute; inset: calc(var(--size) / 2 - var(--r)); border-radius: 50%; border: 1.5px dashed var(--line); animation: spin 40s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- Passos ---------- */
+  .steps { list-style: none; padding: 0; margin: 40px auto 0; max-width: 900px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .step { padding: 26px 20px; border-radius: 24px; background: var(--bg-alt); }
+  .step-icon { position: relative; display: inline-grid; place-items: center; width: 64px; height: 64px; margin-bottom: 14px; border-radius: 20px; background: linear-gradient(135deg, var(--accent), #a855f7); }
+  .step-icon svg { width: 32px; height: 32px; fill: #fff; }
+  .step-icon b { position: absolute; right: -8px; top: -8px; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--text); color: var(--bg); font-size: 13px; }
+  .step h3 { margin: 0; font-size: 19px; letter-spacing: -0.02em; }
+  .step p { margin: 6px 0 0; font-size: 15px; color: var(--text-2); line-height: 1.4; }
+
+  @media (max-width: 960px) {
+    .perks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  /* ---------- Celular: um painel por tela ---------- */
+  @media (max-width: 760px) {
+    .panel { padding-block: 90px 50px; }
+    .p-title { font-size: 36px; }
+    .p-sub { font-size: 17px; margin-top: 10px; }
+    .p-cta, :global(#diferencas .p-cta) { margin-top: 18px; gap: 8px; }
+    .p-cta .btn, :global(#diferencas .p-cta .btn) { padding: 10px 18px; font-size: 15px; }
+    .p-art { margin-top: 30px; }
+    .p-note { margin-top: 16px; font-size: 13px; }
+    :global(html.feed) .p-hero { padding-bottom: calc(70px + env(safe-area-inset-bottom, 0px)); }
+    .laptop { --w: min(88vw, 52dvh); }
+    .stack-art { gap: 14px; flex-direction: column; }
+    .stack3d { --s: min(150px, 21dvh); }
+    .legend { grid-auto-flow: column; gap: 14px; }
+    .legend li { padding-left: 18px; }
+    .legend li::before { width: 10px; height: 10px; top: 5px; }
+    .legend strong { font-size: 13px; }
+    .legend small { display: none; }
+    .perks { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 20px; }
+    .perk { padding: 16px 10px; border-radius: 20px; }
+    .perk-art { height: auto; margin-bottom: 10px; zoom: 0.6; } /* zoom encolhe também o espaço ocupado (scale não) */
+    .perk h3 { font-size: 15px; }
+    .perk p { font-size: 12.5px; }
+    .devices { width: 94vw; }
+    .orbit { --size: min(260px, 36dvh); --r: calc(var(--size) * 0.39); --sat: calc(var(--size) * 0.23); --core: calc(var(--size) * 0.36); }
+    .sat em { display: none; }
+    .steps { grid-template-columns: 1fr; gap: 10px; margin-top: 22px; text-align: left; }
+    .step { display: grid; grid-template-columns: auto 1fr; column-gap: 14px; align-items: center; padding: 14px; border-radius: 18px; }
+    .step-icon { grid-row: span 2; width: 48px; height: 48px; margin: 0; border-radius: 14px; }
+    .step-icon svg { width: 24px; height: 24px; }
+    .step-icon b { width: 20px; height: 20px; font-size: 11px; right: -6px; top: -6px; }
+    .step h3 { font-size: 16px; }
+    .step p { margin: 2px 0 0; font-size: 13px; }
+  }
+  /* celulares baixinhos (iPhone SE) */
+  @media (max-width: 760px) and (max-height: 600px) {
+    .panel { padding-block: 70px 36px; }
+    .p-title { font-size: 30px; }
+    .p-sub { font-size: 15px; }
+    .p-art { margin-top: 20px; }
+    .perk-art { margin-bottom: 6px; zoom: 0.42; }
+    .perk p { display: none; }
+    .steps { gap: 6px; margin-top: 14px; }
+    .step { padding: 10px 12px; }
+    .step p { font-size: 12px; }
+    .perks { margin-top: 14px; }
+  }
+</style>

@@ -6,3 +6,7 @@ dist/
 
 # registro interno de desenvolvimento (não vai para o repositório)
 DEVLOG.md
+
+# relatórios dos testes no navegador (Playwright)
+test-results/
+playwright-report/
