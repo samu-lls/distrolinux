@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.3
+
+**SEO**
+- Títulos e descrições das páginas reescritos para busca, em português e inglês.
+- `sitemap.xml` gerado no build, com as versões pt-BR e en-US ligadas por hreflang.
+- `robots.txt` liberando o site e apontando o sitemap.
+- Link canônico em todas as páginas (links do Comparador com `?d=` contam como a mesma página).
+- Dados estruturados (schema.org): `WebSite` em todo o site; Comparador e Teste de Afinidade como `WebApplication`.
+
 ## v0.1
 
 **Página inicial**

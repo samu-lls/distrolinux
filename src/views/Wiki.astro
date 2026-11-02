@@ -10,7 +10,7 @@ const { lang } = Astro.props as { lang: Lang };
 const t = (s: string) => tr(lang, s);
 ---
 
-<Base title="Wiki · distrolinux" description={t('A árvore das distros Linux, em gotas.')} fullscreen lang={lang}>
+<Base title={`${t('Árvore das distros Linux: história e famílias')} · DISTRO LINUX`} description={t('Mais de 120 distribuições Linux numa árvore interativa: de onde cada uma vem, ficha técnica e onde baixar Debian, Ubuntu, Arch, Fedora e outras.')} lang={lang} fullscreen>
   <section class="wiki" data-lenis-prevent>
     <canvas id="stage" aria-label={t('Árvore interativa das distribuições Linux')}></canvas>
     <div class="labels" id="labels" aria-hidden="true"></div>

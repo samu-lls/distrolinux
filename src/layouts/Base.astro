@@ -11,13 +11,25 @@ interface Props {
   fullscreen?: boolean; // página ocupa a tela toda, sem rolagem nem rodapé
   feed?: boolean; // no celular, as seções [data-screen] viram telas inteiras, uma por vez (como stories)
   lang?: Lang;
+  app?: 'quiz' | 'compare'; // ferramenta: vira WebApplication nos dados estruturados
 }
 
-const { title, fullscreen = false, feed = false, lang = 'pt' } = Astro.props;
+const { title, fullscreen = false, feed = false, lang = 'pt', app } = Astro.props;
 const t = (s: string) => tr(lang, s);
 const description = Astro.props.description ?? t('Tudo sobre Linux, sem enrolação.');
 const page = stripLang(Astro.url.pathname);
 const alt = (l: Lang) => new URL(localePath(l, page), Astro.site).href;
+
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+// dados estruturados (schema.org) para o Google entender o site e as ferramentas
+const ld = [
+  { '@context': 'https://schema.org', '@type': 'WebSite', name: 'DISTRO LINUX', url: new URL(localePath(lang, '/'), Astro.site).href, inLanguage: htmlLang[lang] },
+  app && {
+    '@context': 'https://schema.org', '@type': 'WebApplication', name: title.split(' · ')[0], url: canonical, description,
+    applicationCategory: 'UtilitiesApplication', operatingSystem: 'Any', inLanguage: htmlLang[lang], isAccessibleForFree: true,
+    offers: { '@type': 'Offer', price: '0', priceCurrency: lang === 'en' ? 'USD' : 'BRL' },
+  },
+].filter(Boolean);
 
 // script do <head>: usa a mesma decideLang testada em tests/detect.test.ts
 const langScript = `(() => {
@@ -56,6 +68,8 @@ const langScript = `(() => {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <script type="application/ld+json" set:html={JSON.stringify(ld.length > 1 ? ld : ld[0])} />
     <!-- versões em outros idiomas, para buscadores -->
     <link rel="alternate" hreflang="pt-BR" href={alt('pt')} />
     <link rel="alternate" hreflang="en-US" href={alt('en')} />

@@ -9,7 +9,7 @@ const { lang } = Astro.props as { lang: Lang };
 const t = (s: string) => tr(lang, s);
 ---
 
-<Base title={`${t('Teste de Afinidade')} · distrolinux`} description={t('Descubra qual distro Linux combina com você.')} lang={lang}>
+<Base title={`${t('Qual distro Linux combina com você? Teste de afinidade')} · DISTRO LINUX`} description={t('Responda 12 perguntas simples e descubra as 5 distros Linux que mais combinam com você, com os prós e contras de cada uma.')} lang={lang} app="quiz">
   <section class="quiz">
     <div class="aurora" aria-hidden="true"></div>
 

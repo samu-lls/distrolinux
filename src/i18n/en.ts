@@ -1186,4 +1186,15 @@ export const en: Record<string, string> = {
   "Nenhuma distro encontrada": "No distro found",
   "Nenhuma distro atende tudo o que você pediu: algumas respostas puxam para lados opostos (por exemplo, jogos com NVIDIA e só software livre). Veja em \"Contra\" o que pesou em cada uma.": "No distro meets everything you asked for: some answers pull in opposite directions (for example, gaming with NVIDIA and free software only). Check \"Cons\" to see what weighed on each one.",
   "Oi! Eu te ajudo por aqui. <b>Clique numa gota</b> para abrir: as distros estão dentro do <b>Linux</b>.": "Hi! I'll help you around. <b>Click a drop</b> to open it: the distros are inside <b>Linux</b>.",
+  // SEO: títulos e descrições das páginas
+  "Qual distro Linux combina com você? Teste de afinidade": "Which Linux distro is right for you? Affinity test",
+  "Responda 12 perguntas simples e descubra as 5 distros Linux que mais combinam com você, com os prós e contras de cada uma.": "Answer 12 simple questions and find the 5 Linux distros that suit you best, with the pros and cons of each.",
+  "O que é o Linux? Guia para quem nunca usou": "What is Linux? A guide for first-timers",
+  "O que é o Linux, para que serve, como trocar o Windows ou o Mac por ele e qual distro escolher. Um guia simples para iniciantes.": "What Linux is, what it's for, how to swap Windows or a Mac for it and which distro to choose. A simple guide for beginners.",
+  "Árvore das distros Linux: história e famílias": "Linux distro tree: history and families",
+  "Mais de 120 distribuições Linux numa árvore interativa: de onde cada uma vem, ficha técnica e onde baixar Debian, Ubuntu, Arch, Fedora e outras.": "Over 120 Linux distributions in an interactive tree: where each one comes from, specs and where to download Debian, Ubuntu, Arch, Fedora and more.",
+  "Qual distro Linux escolher? Guia para iniciantes": "Which Linux distro should you choose? Beginner's guide",
+  "As melhores distros Linux para iniciantes, PC fraco, jogos e programação, com tabela comparativa, interfaces gráficas e Wayland × X11.": "The best Linux distros for beginners, old PCs, gaming and programming, with a comparison table, desktop environments and Wayland vs X11.",
+  "Comparador de distros Linux lado a lado": "Linux distro comparison, side by side",
+  "Compare Ubuntu, Linux Mint, Fedora, Debian, Arch e mais de 80 distros Linux lado a lado: facilidade, jogos, hardware, servidores e celulares.": "Compare Ubuntu, Linux Mint, Fedora, Debian, Arch and 80+ more Linux distros side by side: ease of use, gaming, hardware, servers and phones.",
 };

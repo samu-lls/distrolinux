@@ -133,6 +133,20 @@ describe.each(ROUTES)('$path', ({ lang, path }) => {
     });
   }
 
+  it('SEO: canonical igual ao og:url, título e descrição com tamanho bom para o Google, JSON-LD válido', () => {
+    const d = doc();
+    const canonical = d.querySelector('link[rel="canonical"]')?.getAttribute('href');
+    expect(canonical).toBe(d.querySelector('meta[property="og:url"]')!.getAttribute('content'));
+    expect(d.title.length, d.title).toBeLessThanOrEqual(75);
+    const desc = d.querySelector('meta[name="description"]')!.getAttribute('content')!;
+    expect(desc.length, desc).toBeGreaterThan(70);
+    expect(desc.length, desc).toBeLessThanOrEqual(170);
+    const ld = JSON.parse(d.querySelector('script[type="application/ld+json"]')!.textContent!);
+    const items = Array.isArray(ld) ? ld : [ld];
+    expect(items[0]['@type']).toBe('WebSite');
+    if (path.includes('comparar') || path.includes('quiz')) expect(items.some((x: any) => x['@type'] === 'WebApplication')).toBe(true);
+  });
+
   it('script de detecção de idioma presente no <head>', () => {
     const s = [...doc().querySelectorAll('head script')].map((x) => x.textContent).join('\n');
     expect(s).toContain('decideLang');
@@ -180,4 +194,19 @@ describe.each(ROUTES)('$path', ({ lang, path }) => {
       expect(bad).toEqual([]);
     });
   }
+});
+
+describe('buscadores', () => {
+  it('sitemap.xml lista todas as páginas nos dois idiomas, com hreflang', () => {
+    const xml = readFileSync('dist/sitemap.xml', 'utf8');
+    for (const r of ROUTES) expect(xml, r.path).toContain(`<loc>https://distrolinux.com.br${r.path.endsWith('/') ? r.path : `${r.path}/`}</loc>`);
+    expect((xml.match(/<url>/g) ?? []).length).toBe(ROUTES.length);
+    expect(xml).toContain('hreflang="en-US"');
+  });
+
+  it('robots.txt libera o site e aponta o sitemap', () => {
+    const robots = readFileSync('dist/robots.txt', 'utf8');
+    expect(robots).toMatch(/Allow: \//);
+    expect(robots).toContain('Sitemap: https://distrolinux.com.br/sitemap.xml');
+  });
 });
